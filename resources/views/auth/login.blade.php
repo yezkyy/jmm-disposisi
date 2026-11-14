@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-white">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,8 +16,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Styles & Scripts via Vite -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @php
+    $isProduction = app()->environment('production');
+    $manifestPath = $isProduction ? '../public_html/build/manifest.json' : public_path('build/manifest.json');
+    @endphp
+
+    @if ($isProduction && file_exists($manifestPath))
+    @php
+    $manifest = json_decode(file_get_contents($manifestPath), true);
+    @endphp
+    <link rel="stylesheet" href="{{ config('app.url') }}/build/{{ $manifest['resources/css/app.css']['file'] }}">
+    <script type="module" src="{{ config('app.url') }}/build/{{ $manifest['resources/js/app.js']['file'] }}"></script>
+    @else
+    @viteReactRefresh
+    @vite(['resources/js/app.js', 'resources/css/app.css'])
+    @endif
 </head>
+
 <body class="h-full antialiased font-sans bg-white text-slate-800">
     <div class="min-h-screen w-full flex flex-col lg:flex-row">
         <!-- LEFT PANEL: Enterprise Branding, Highlights & Identity (Full Height Left Side) -->
@@ -110,10 +126,9 @@
         </div>
 
         <!-- RIGHT PANEL: Authentication Form (Full Height, Spacious, Clean) -->
-        <div 
+        <div
             x-data="{ showPassword: false, submitting: false }"
-            class="w-full lg:w-1/2 xl:w-[46%] bg-white flex flex-col justify-between p-6 sm:p-10 lg:p-14 xl:p-16 min-h-screen overflow-y-auto"
-        >
+            class="w-full lg:w-1/2 xl:w-[46%] bg-white flex flex-col justify-between p-6 sm:p-10 lg:p-14 xl:p-16 min-h-screen overflow-y-auto">
             <!-- Mobile Brand Header (Visible only on small/medium screens) -->
             <div class="lg:hidden flex items-center justify-between pb-6 mb-4 border-b border-slate-100">
                 <div class="flex items-center gap-3">
@@ -161,23 +176,22 @@
                             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                 <i data-lucide="mail" class="w-4 h-4"></i>
                             </span>
-                            <input 
-                                id="email" 
-                                type="email" 
-                                name="email" 
-                                value="{{ old('email') }}" 
-                                required 
-                                autofocus 
+                            <input
+                                id="email"
+                                type="email"
+                                name="email"
+                                value="{{ old('email') }}"
+                                required
+                                autofocus
                                 autocomplete="username"
                                 placeholder="nama@jmmdisposisi.my.id"
-                                class="w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl border @error('email') border-rose-500 bg-rose-50/20 text-rose-900 @else border-slate-200 bg-white @enderror focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-600 transition shadow-xs placeholder:text-slate-400"
-                            >
+                                class="w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl border @error('email') border-rose-500 bg-rose-50/20 text-rose-900 @else border-slate-200 bg-white @enderror focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-600 transition shadow-xs placeholder:text-slate-400">
                         </div>
                         @error('email')
-                            <p class="mt-2 text-xs text-rose-600 font-medium flex items-center gap-1.5">
-                                <i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0"></i>
-                                <span>{{ $message }}</span>
-                            </p>
+                        <p class="mt-2 text-xs text-rose-600 font-medium flex items-center gap-1.5">
+                            <i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                            <span>{{ $message }}</span>
+                        </p>
                         @enderror
                     </div>
 
@@ -190,31 +204,29 @@
                             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                 <i data-lucide="lock" class="w-4 h-4"></i>
                             </span>
-                            <input 
-                                id="password" 
-                                :type="showPassword ? 'text' : 'password'" 
-                                name="password" 
-                                required 
+                            <input
+                                id="password"
+                                :type="showPassword ? 'text' : 'password'"
+                                name="password"
+                                required
                                 autocomplete="current-password"
                                 placeholder="Masukkan kata sandi..."
-                                class="w-full pl-10 pr-11 py-2.5 text-sm rounded-xl border @error('password') border-rose-500 bg-rose-50/20 text-rose-900 @else border-slate-200 bg-white @enderror focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-600 transition shadow-xs placeholder:text-slate-400"
-                            >
-                            <button 
-                                type="button" 
+                                class="w-full pl-10 pr-11 py-2.5 text-sm rounded-xl border @error('password') border-rose-500 bg-rose-50/20 text-rose-900 @else border-slate-200 bg-white @enderror focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-600 transition shadow-xs placeholder:text-slate-400">
+                            <button
+                                type="button"
                                 @click="showPassword = !showPassword"
                                 class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700 focus:outline-none transition cursor-pointer"
                                 tabindex="-1"
-                                :title="showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'"
-                            >
+                                :title="showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'">
                                 <i x-show="!showPassword" data-lucide="eye" class="w-4 h-4"></i>
                                 <i x-show="showPassword" x-cloak data-lucide="eye-off" class="w-4 h-4"></i>
                             </button>
                         </div>
                         @error('password')
-                            <p class="mt-2 text-xs text-rose-600 font-medium flex items-center gap-1.5">
-                                <i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0"></i>
-                                <span>{{ $message }}</span>
-                            </p>
+                        <p class="mt-2 text-xs text-rose-600 font-medium flex items-center gap-1.5">
+                            <i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                            <span>{{ $message }}</span>
+                        </p>
                         @enderror
                     </div>
 
@@ -232,11 +244,10 @@
 
                     <!-- Submit Button -->
                     <div class="pt-2">
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             :disabled="submitting"
-                            class="w-full py-3 px-4 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:opacity-75 disabled:cursor-wait text-white font-bold text-sm shadow-md shadow-primary-600/30 hover:shadow-lg hover:shadow-primary-600/40 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all flex items-center justify-center gap-2 group cursor-pointer"
-                        >
+                            class="w-full py-3 px-4 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:opacity-75 disabled:cursor-wait text-white font-bold text-sm shadow-md shadow-primary-600/30 hover:shadow-lg hover:shadow-primary-600/40 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all flex items-center justify-center gap-2 group cursor-pointer">
                             <span x-show="!submitting" class="flex items-center gap-2">
                                 <span>Masuk ke Sistem</span>
                                 <i data-lucide="arrow-right" class="w-4 h-4 transition-transform group-hover:translate-x-0.5"></i>
@@ -263,4 +274,5 @@
         </div>
     </div>
 </body>
+
 </html>

@@ -1,12 +1,28 @@
 <!DOCTYPE html>
 <html lang="id" class="h-full bg-slate-100">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>403 &mdash; Akses Ditolak | JMM Disposisi</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @php
+    $isProduction = app()->environment('production');
+    $manifestPath = $isProduction ? '../public_html/build/manifest.json' : public_path('build/manifest.json');
+    @endphp
+
+    @if ($isProduction && file_exists($manifestPath))
+    @php
+    $manifest = json_decode(file_get_contents($manifestPath), true);
+    @endphp
+    <link rel="stylesheet" href="{{ config('app.url') }}/build/{{ $manifest['resources/css/app.css']['file'] }}">
+    <script type="module" src="{{ config('app.url') }}/build/{{ $manifest['resources/js/app.js']['file'] }}"></script>
+    @else
+    @viteReactRefresh
+    @vite(['resources/js/app.js', 'resources/css/app.css'])
+    @endif
 </head>
+
 <body class="h-full flex items-center justify-center p-4 antialiased font-sans bg-slate-100">
     <div class="max-w-md w-full text-center bg-white rounded-2xl p-8 border border-slate-200 shadow-xl space-y-4">
         <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 mx-auto flex items-center justify-center">
@@ -24,5 +40,5 @@
         </div>
     </div>
 </body>
-</html>
 
+</html>
