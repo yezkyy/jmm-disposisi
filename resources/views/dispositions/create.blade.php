@@ -253,8 +253,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Alokasi Nominal (Rp)</label>
-                            <input type="number" step="any" name="recipients[0][allocated_amount]" min="0" placeholder="0" class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono">
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Keterangan / Cabang Bank</label>
+                            <input type="text" name="recipients[0][notes]" placeholder="Contoh: KCP Sudirman Balikpapan / catatan..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
                         </div>
                     </div>
 
@@ -531,8 +531,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Alokasi Nominal (Rp)</label>
-                    <input type="number" step="any" name="recipients[${recipientIndex}][allocated_amount]" min="0" placeholder="0" class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono">
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Keterangan / Cabang Bank</label>
+                    <input type="text" name="recipients[${recipientIndex}][notes]" placeholder="Contoh: KCP Sudirman Balikpapan / catatan..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
             </div>
 

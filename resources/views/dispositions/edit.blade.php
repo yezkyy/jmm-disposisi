@@ -343,19 +343,17 @@
                                 </select>
                             </div>
 
-                            <!-- Nominal Dialokasikan -->
+                            <!-- Keterangan / Cabang Bank -->
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-700 mb-1 uppercase tracking-wider">
-                                    Nominal Alokasi (Rp) <span class="text-rose-500">*</span>
+                                    Keterangan / Cabang Bank
                                 </label>
                                 <input 
-                                    type="number" 
-                                    step="0.01" 
-                                    min="0" 
-                                    name="recipients[{{ $rIdx }}][amount]" 
-                                    value="{{ $rec['amount'] ?? 0 }}" 
-                                    required 
-                                    class="w-full px-3 py-2 text-xs text-right rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono font-bold bg-white"
+                                    type="text" 
+                                    name="recipients[{{ $rIdx }}][notes]" 
+                                    value="{{ $rec['notes'] ?? '' }}" 
+                                    placeholder="Contoh: KCP Sudirman Balikpapan / catatan..."
+                                    class="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
                                 >
                             </div>
                         </div>
@@ -786,8 +784,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[11px] font-semibold text-slate-700 mb-1 uppercase tracking-wider">Nominal Alokasi (Rp) <span class="text-rose-500">*</span></label>
-                    <input type="number" step="0.01" min="0" name="recipients[${recipientIndex}][amount]" value="0" required class="w-full px-3 py-2 text-xs text-right rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono font-bold bg-white">
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1 uppercase tracking-wider">Keterangan / Cabang Bank</label>
+                    <input type="text" name="recipients[${recipientIndex}][notes]" value="" placeholder="Contoh: KCP Sudirman Balikpapan / catatan..." class="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white">
                 </div>
             </div>
 

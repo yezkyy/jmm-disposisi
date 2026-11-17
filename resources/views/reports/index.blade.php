@@ -120,8 +120,7 @@
                         <option value="approved" {{ request('approval_status') === 'approved' ? 'selected' : '' }}>Disetujui Penuh</option>
                         <option value="partially_approved" {{ request('approval_status') === 'partially_approved' ? 'selected' : '' }}>Disetujui Sebagian</option>
                         <option value="waiting_manager" {{ request('approval_status') === 'waiting_manager' ? 'selected' : '' }}>Menunggu Manager</option>
-                        <option value="waiting_finance" {{ request('approval_status') === 'waiting_finance' ? 'selected' : '' }}>Menunggu Finance</option>
-                        <option value="waiting_owner" {{ request('approval_status') === 'waiting_owner' ? 'selected' : '' }}>Menunggu Owner</option>
+                        <option value="waiting_finance" {{ request('approval_status') === 'waiting_finance' ? 'selected' : '' }}>Menunggu Keputusan Finance (Arahan Owner)</option>
                         <option value="revision_requested" {{ request('approval_status') === 'revision_requested' ? 'selected' : '' }}>Diminta Revisi</option>
                         <option value="rejected" {{ request('approval_status') === 'rejected' ? 'selected' : '' }}>Ditolak</option>
                     </select>

@@ -262,7 +262,7 @@
                             <th class="py-2 px-3 border-r border-slate-300">Nama Penerima</th>
                             <th class="py-2 px-3 border-r border-slate-300">Rekening 1 (Wajib)</th>
                             <th class="py-2 px-3 border-r border-slate-300">Rekening 2 (Cadangan)</th>
-                            <th class="py-2 px-3 text-right w-36">Alokasi (Rp)</th>
+                            <th class="py-2 px-3 w-44">Keterangan</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 text-[11px]">
@@ -285,8 +285,8 @@
                                         <span class="text-slate-400">-</span>
                                     @endif
                                 </td>
-                                <td class="py-2 px-3 text-right font-mono font-bold text-slate-900">
-                                    Rp {{ number_format((float) $rec->amount, 2, ',', '.') }}
+                                <td class="py-2 px-3 text-slate-800 text-[11px]">
+                                    {{ $rec->notes ?: '-' }}
                                 </td>
                             </tr>
                         @empty
@@ -312,22 +312,22 @@
                 <table class="w-full text-center border-collapse border border-slate-300 text-xs">
                     <thead>
                         <tr class="bg-slate-50 text-slate-700 font-bold text-[10px] uppercase border-b border-slate-300">
-                            <th class="py-2 px-3 border-r border-slate-300 w-1/3">1. Diajukan Oleh</th>
-                            <th class="py-2 px-3 border-r border-slate-300 w-1/3">2. Disetujui (ACC Manager)</th>
-                            <th class="py-2 px-3 w-1/3">3. Putusan Akhir (ACC Finance / Owner)</th>
+                            <th class="py-2 px-3 border-r border-slate-300 w-1/3">1. Diajukan oleh (Admin/Finance)</th>
+                            <th class="py-2 px-3 border-r border-slate-300 w-1/3">2. Persetujuan Manager</th>
+                            <th class="py-2 px-3 w-1/3">3. Keputusan Akhir Finance (Sesuai Arahan Owner)</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <!-- Pemohon -->
                             <td class="py-3 px-3 border-r border-slate-200 align-top">
-                                <div class="text-[10px] text-slate-500 uppercase font-semibold">Pemohon Disposisi</div>
+                                <div class="text-[10px] text-slate-500 uppercase font-semibold">Pengajuan Admin / Finance</div>
                                 <div class="h-16 flex items-center justify-center">
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                                         <i class="fa-solid fa-check"></i> Diajukan
                                     </span>
                                 </div>
-                                <div class="font-bold text-slate-900 underline">{{ $disposition->applicant?->name ?? 'Pemohon' }}</div>
+                                <div class="font-bold text-slate-900 underline">{{ $disposition->applicant?->name ?? 'Admin / Finance' }}</div>
                                 <div class="text-[10px] text-slate-500 mt-0.5">{{ $disposition->disposition_date ? $disposition->disposition_date->format('d/m/Y') : '-' }}</div>
                             </td>
 
@@ -347,51 +347,45 @@
                                         @endif
                                     @else
                                         <span class="text-[11px] text-amber-600 italic font-semibold">
-                                            @if ($disposition->approval_status === 'waiting_manager')
-                                                Menunggu ACC
-                                            @else
-                                                -
-                                            @endif
+                                            ( Menunggu Persetujuan Manager )
                                         </span>
                                     @endif
                                 </div>
-                                <div class="font-bold text-slate-900 underline">{{ $mgrAppr?->actor?->name ?? '( Manager Operasional )' }}</div>
+                                <div class="font-bold text-slate-900 {{ $mgrAppr ? 'underline' : 'text-slate-400 font-normal' }}">
+                                    {{ $mgrAppr?->actor?->name ?? '-' }}
+                                </div>
                                 <div class="text-[10px] text-slate-500 mt-0.5">
                                     {{ $mgrAppr ? $mgrAppr->created_at->format('d/m/Y H:i') : '-' }}
                                 </div>
                             </td>
 
-                            <!-- Finance / Owner -->
+                            <!-- Finance / Arahan Owner -->
                             <td class="py-3 px-3 align-top">
-                                <div class="text-[10px] text-slate-500 uppercase font-semibold">Tahap 2: Finance (Arahan Owner)</div>
+                                <div class="text-[10px] text-slate-500 uppercase font-semibold">Tahap 2: Keputusan Akhir Finance</div>
                                 <div class="h-16 flex items-center justify-center">
-                                    @if ($finAppr)
-                                        @if (in_array($finAppr->decision, ['approved', 'partially_approved']) || $disposition->approval_status === 'approved')
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-black bg-emerald-100 text-emerald-800 border-2 border-emerald-400">
-                                                <i class="fa-solid fa-circle-check"></i> ACC OWNER
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
-                                                <i class="fa-solid fa-times-circle"></i> TIDAK ACC
-                                            </span>
-                                        @endif
-                                    @elseif ($disposition->approval_status === 'approved')
+                                    @if ($finAppr && in_array($finAppr->decision, ['approved', 'partially_approved']) && $disposition->approval_status === 'approved')
                                         <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-black bg-emerald-100 text-emerald-800 border-2 border-emerald-400">
-                                            <i class="fa-solid fa-circle-check"></i> ACC OWNER
+                                            <i class="fa-solid fa-circle-check"></i> ACC FINANCE (ARAHAN OWNER)
+                                        </span>
+                                    @elseif ($finAppr && in_array($finAppr->decision, ['rejected', 'revision_requested']))
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                                            <i class="fa-solid fa-times-circle"></i> TIDAK ACC
+                                        </span>
+                                    @elseif ($disposition->approval_status === 'waiting_finance')
+                                        <span class="text-[11px] text-amber-600 italic font-semibold">
+                                            ( Menunggu Keputusan Finance )
                                         </span>
                                     @else
-                                        <span class="text-[11px] text-amber-600 italic font-semibold">
-                                            @if ($disposition->approval_status === 'waiting_finance')
-                                                Menunggu ACC (Arahan Owner)
-                                            @else
-                                                -
-                                            @endif
+                                        <span class="text-[11px] text-slate-400 italic font-medium">
+                                            -
                                         </span>
                                     @endif
                                 </div>
-                                <div class="font-bold text-slate-900 underline">{{ $finAppr?->actor?->name ?? '( Admin / Finance )' }}</div>
+                                <div class="font-bold text-slate-900 {{ ($finAppr && $disposition->approval_status === 'approved') ? 'underline' : 'text-slate-400 font-normal' }}">
+                                    {{ ($finAppr && $disposition->approval_status === 'approved') ? $finAppr->actor?->name : '-' }}
+                                </div>
                                 <div class="text-[10px] text-slate-500 mt-0.5">
-                                    {{ $finAppr ? $finAppr->created_at->format('d/m/Y H:i') : ($disposition->approval_status === 'approved' ? 'ACC Selesai' : '-') }}
+                                    {{ ($finAppr && $disposition->approval_status === 'approved') ? $finAppr->created_at->format('d/m/Y H:i') : '-' }}
                                 </div>
                             </td>
                         </tr>

@@ -53,6 +53,7 @@ class UpdateDispositionRequest extends FormRequest
             'recipients.*.secondary_account_number' => ['nullable', 'string', 'max:50'],
             'recipients.*.allocated_amount' => ['nullable'],
             'recipients.*.amount' => ['nullable'],
+            'recipients.*.notes' => ['nullable', 'string', 'max:500'],
 
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],

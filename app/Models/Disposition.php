@@ -118,11 +118,11 @@ class Disposition extends Model
         return match ($this->approval_status) {
             self::STATUS_DRAFT => 'Draft',
             self::STATUS_WAITING_MANAGER => 'Menunggu Manager',
-            self::STATUS_WAITING_FINANCE => 'Verifikasi Finance',
-            self::STATUS_WAITING_OWNER => 'Menunggu Owner',
+            self::STATUS_WAITING_FINANCE => 'Menunggu Keputusan Finance (Arahan Owner)',
+            self::STATUS_WAITING_OWNER => 'Menunggu Keputusan Finance (Arahan Owner)',
             self::STATUS_REVISION_REQUESTED => 'Perlu Revisi',
             self::STATUS_REJECTED => 'Ditolak',
-            self::STATUS_APPROVED => 'Disetujui Final',
+            self::STATUS_APPROVED => 'Disetujui (ACC Final)',
             default => $this->approval_status,
         };
     }
@@ -135,8 +135,8 @@ class Disposition extends Model
         return match ($this->approval_status) {
             self::STATUS_DRAFT => 'bg-slate-100 text-slate-700 border-slate-200',
             self::STATUS_WAITING_MANAGER => 'bg-amber-50 text-amber-700 border-amber-200',
-            self::STATUS_WAITING_FINANCE => 'bg-sky-50 text-sky-700 border-sky-200',
-            self::STATUS_WAITING_OWNER => 'bg-purple-50 text-purple-700 border-purple-200',
+            self::STATUS_WAITING_FINANCE => 'bg-blue-50 text-blue-700 border-blue-200',
+            self::STATUS_WAITING_OWNER => 'bg-blue-50 text-blue-700 border-blue-200',
             self::STATUS_REVISION_REQUESTED => 'bg-orange-50 text-orange-700 border-orange-200',
             self::STATUS_REJECTED => 'bg-rose-50 text-rose-700 border-rose-200',
             self::STATUS_APPROVED => 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -218,8 +218,13 @@ class Disposition extends Model
      */
     public function canBeApprovedBy(User $user): bool
     {
-        // Pemohon dilarang menyetujui pengajuannya sendiri
-        if ($this->applicant_id === $user->id) {
+        // Tahap Finance/Owner merupakan putusan akhir atas arahan Owner.
+        // Jika pemohon adalah Finance (misal Indah Novitasari), Finance tetap berwenang mengeksekusi putusan akhir atas arahan Owner setelah diverifikasi Manager.
+        $isFinanceFinalStage = in_array($this->approval_status, [self::STATUS_WAITING_FINANCE, self::STATUS_WAITING_OWNER])
+            && ($user->isAdminFinance() || $user->isOwner());
+
+        // Pada tahap Manager, pemohon dilarang menyetujui pengajuannya sendiri
+        if ($this->applicant_id === $user->id && !$isFinanceFinalStage) {
             return false;
         }
 

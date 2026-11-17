@@ -260,5 +260,12 @@ class SampleBusinessDataSeeder extends Seeder
                 'created_at' => now()->subDays(1),
             ]);
         }
+
+        // Sinkronkan urutan nomor disposisi untuk tahun 2026 agar nomor berikutnya tidak duplikat
+        $maxSeq = \App\Models\DispositionSequence::getMaxExistingNumberForYear(2026);
+        \App\Models\DispositionSequence::updateOrCreate(
+            ['year' => 2026],
+            ['last_number' => $maxSeq]
+        );
     }
 }

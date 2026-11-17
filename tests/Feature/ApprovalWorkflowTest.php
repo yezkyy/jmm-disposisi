@@ -241,5 +241,58 @@ class ApprovalWorkflowTest extends TestCase
         $this->assertEquals(Disposition::STATUS_REJECTED, $disp->approval_status);
         $this->assertFalse($disp->canBeEditedBy($this->pemohon));
     }
+
+    public function test_finance_applicant_can_approve_final_stage_under_owner_direction(): void
+    {
+        // Disposisi diajukan oleh Finance (Indah Novitasari)
+        $disp = Disposition::create([
+            'disposition_number' => 'JMM/2026/0077',
+            'disposition_date' => now()->toDateString(),
+            'subject' => 'Disposisi yang diajukan Finance',
+            'applicant_id' => $this->adminFinance->id,
+            'approval_status' => Disposition::STATUS_WAITING_MANAGER,
+            'requested_total' => 3000000,
+            'submitted_at' => now(),
+        ]);
+
+        $disp->items()->create([
+            'category_id' => $this->category->id,
+            'description' => 'Kebutuhan ATK Kantor',
+            'amount' => 3000000,
+        ]);
+
+        $disp->recipients()->create([
+            'recipient_name' => 'Toko Alat Tulis',
+            'primary_account_name' => 'Toko Alat Tulis',
+            'primary_bank_name' => 'BCA',
+            'primary_account_number' => '12345678',
+            'notes' => 'Cabang Balikpapan',
+        ]);
+
+        // 1. Manager menyetujui Tahap 1
+        $respManager = $this->actingAs($this->manager)->post(route('approvals.decide', $disp), [
+            'decision' => 'approved',
+            'notes' => 'Disetujui Manager Operasional.',
+        ]);
+        $respManager->assertRedirect(route('approvals.index'));
+
+        $disp->refresh();
+        $this->assertEquals(Disposition::STATUS_WAITING_FINANCE, $disp->approval_status);
+
+        // 2. Finance yang merupakan pemohon dapat mengakses halaman review tahap 2
+        $respReview = $this->actingAs($this->adminFinance)->get(route('approvals.review', $disp));
+        $respReview->assertStatus(200);
+
+        // 3. Finance dapat memberikan putusan akhir ACC (sesuai arahan Owner)
+        $respFinance = $this->actingAs($this->adminFinance)->post(route('approvals.decide', $disp), [
+            'decision' => 'approved',
+            'notes' => 'ACC sesuai arahan Owner.',
+        ]);
+        $respFinance->assertRedirect(route('approvals.index'));
+
+        $disp->refresh();
+        $this->assertEquals(Disposition::STATUS_APPROVED, $disp->approval_status);
+        $this->assertEquals(3000000, (float) $disp->final_approved_total);
+    }
 }
 

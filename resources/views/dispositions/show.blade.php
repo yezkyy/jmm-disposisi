@@ -93,14 +93,7 @@
             <!-- Tombol Review Approval jika user adalah approver pada step ini -->
             @php
                 $user = auth()->user();
-                $canReview = false;
-                if ($user->isManager() && $disposition->approval_status === 'waiting_manager' && $disposition->applicant_id !== $user->id) {
-                    $canReview = true;
-                } elseif (($user->isAdminFinance() || $user->isOwner()) && $disposition->approval_status === 'waiting_finance' && $disposition->applicant_id !== $user->id) {
-                    $canReview = true;
-                } elseif ($user->isOwner() && $disposition->approval_status === 'waiting_owner' && $disposition->applicant_id !== $user->id) {
-                    $canReview = true;
-                }
+                $canReview = $user ? $disposition->canBeApprovedBy($user) : false;
             @endphp
 
             @if($canReview && Route::has('approvals.review'))
@@ -339,10 +332,10 @@
                                 <span class="text-[10px] uppercase font-semibold text-slate-400">{{ $rec->recipient_type_label }}</span>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <span class="text-[10px] text-slate-400 block uppercase">Alokasi</span>
-                            <span class="text-sm font-extrabold text-primary-700 font-mono">
-                                Rp {{ number_format($rec->amount, 2, ',', '.') }}
+                        <div class="text-right max-w-[200px]">
+                            <span class="text-[10px] text-slate-400 block uppercase font-semibold">Keterangan / Cabang</span>
+                            <span class="text-xs font-semibold text-slate-700">
+                                {{ $rec->notes ?: '-' }}
                             </span>
                         </div>
                     </div>
@@ -399,82 +392,60 @@
             Riwayat & Status Alur Persetujuan (Approval Trail)
         </h2>
 
-        <!-- Step Indicator Flow -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 py-2">
+        <!-- Step Indicator Flow (2 Tahap: Manager -> Finance Arahan Owner) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
             <!-- 1. Pemohon / Pengajuan -->
             <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/60 text-xs space-y-1">
                 <div class="flex items-center justify-between text-emerald-800 font-bold">
-                    <span>1. Pengajuan</span>
+                    <span>1. Diajukan oleh (Admin/Finance)</span>
                     <i data-lucide="check" class="w-4 h-4"></i>
                 </div>
-                <p class="text-[11px] text-emerald-700 font-medium">{{ $disposition->applicant?->name }}</p>
-                <p class="text-[10px] text-emerald-600">{{ $disposition->created_at->format('d/m/Y H:i') }}</p>
+                <p class="text-[11px] text-emerald-700 font-bold">{{ $disposition->applicant?->name }}</p>
+                <p class="text-[10px] text-emerald-600">{{ $disposition->disposition_date ? $disposition->disposition_date->format('d/m/Y') : ($disposition->created_at ? $disposition->created_at->format('d/m/Y') : '-') }}</p>
             </div>
 
             <!-- 2. Manager -->
             @php
-                $mgrApproval = $disposition->approvals->where('step', 'manager')->first();
+                $mgrApproval = $disposition->approvals->where('stage', 'manager')->first();
             @endphp
             <div class="p-3 rounded-xl border text-xs space-y-1
-                @if($mgrApproval && in_array($mgrApproval->action, ['approved', 'partially_approved'])) border-emerald-200 bg-emerald-50/60 text-emerald-800
-                @elseif($mgrApproval && $mgrApproval->action === 'rejected') border-rose-200 bg-rose-50 text-rose-800
-                @elseif($mgrApproval && $mgrApproval->action === 'revision') border-amber-200 bg-amber-50 text-amber-800
+                @if($mgrApproval && in_array($mgrApproval->decision, ['approved', 'partially_approved'])) border-emerald-200 bg-emerald-50/60 text-emerald-800
+                @elseif($mgrApproval && $mgrApproval->decision === 'rejected') border-rose-200 bg-rose-50 text-rose-800
+                @elseif($mgrApproval && $mgrApproval->decision === 'revision_requested') border-amber-200 bg-amber-50 text-amber-800
                 @elseif($disposition->approval_status === 'waiting_manager') border-blue-300 bg-blue-50/60 text-blue-800
                 @else border-slate-200 bg-slate-50 text-slate-400 @endif">
                 <div class="flex items-center justify-between font-bold">
-                    <span>2. Manager</span>
-                    @if($mgrApproval && in_array($mgrApproval->action, ['approved', 'partially_approved']))
+                    <span>2. Persetujuan Manager</span>
+                    @if($mgrApproval && in_array($mgrApproval->decision, ['approved', 'partially_approved']))
                         <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
                     @elseif($disposition->approval_status === 'waiting_manager')
                         <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                     @endif
                 </div>
-                <p class="text-[11px] font-medium">{{ $mgrApproval?->actor?->name ?? 'Menunggu Verifikasi' }}</p>
+                <p class="text-[11px] font-bold">{{ $mgrApproval?->actor?->name ?? ($disposition->approval_status === 'waiting_manager' ? 'Menunggu Persetujuan Manager' : '-') }}</p>
                 <p class="text-[10px] text-slate-500">{{ $mgrApproval ? $mgrApproval->created_at->format('d/m/Y H:i') : ($disposition->approval_status === 'waiting_manager' ? 'Dalam Antrean' : '-') }}</p>
             </div>
 
-            <!-- 3. Admin Finance -->
+            <!-- 3. Finance (Arahan Owner) -->
             @php
-                $finApproval = $disposition->approvals->where('step', 'finance')->first();
+                $finApproval = $disposition->approvals->where('stage', 'finance')->first();
             @endphp
             <div class="p-3 rounded-xl border text-xs space-y-1
-                @if($finApproval && in_array($finApproval->action, ['approved', 'partially_approved'])) border-emerald-200 bg-emerald-50/60 text-emerald-800
-                @elseif($finApproval && $finApproval->action === 'rejected') border-rose-200 bg-rose-50 text-rose-800
-                @elseif($finApproval && $finApproval->action === 'revision') border-amber-200 bg-amber-50 text-amber-800
+                @if($finApproval && in_array($finApproval->decision, ['approved', 'partially_approved'])) border-emerald-200 bg-emerald-50/60 text-emerald-800
+                @elseif($finApproval && $finApproval->decision === 'rejected') border-rose-200 bg-rose-50 text-rose-800
+                @elseif($finApproval && $finApproval->decision === 'revision_requested') border-amber-200 bg-amber-50 text-amber-800
                 @elseif($disposition->approval_status === 'waiting_finance') border-blue-300 bg-blue-50/60 text-blue-800
                 @else border-slate-200 bg-slate-50 text-slate-400 @endif">
                 <div class="flex items-center justify-between font-bold">
-                    <span>3. Admin Finance</span>
-                    @if($finApproval && in_array($finApproval->action, ['approved', 'partially_approved']))
+                    <span>3. Keputusan Akhir Finance (Sesuai Arahan Owner)</span>
+                    @if($finApproval && in_array($finApproval->decision, ['approved', 'partially_approved']))
                         <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
                     @elseif($disposition->approval_status === 'waiting_finance')
                         <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                     @endif
                 </div>
-                <p class="text-[11px] font-medium">{{ $finApproval?->actor?->name ?? 'Menunggu Verifikasi' }}</p>
+                <p class="text-[11px] font-bold">{{ $finApproval?->actor?->name ?? ($disposition->approval_status === 'waiting_finance' ? 'Menunggu Keputusan Finance' : '-') }}</p>
                 <p class="text-[10px] text-slate-500">{{ $finApproval ? $finApproval->created_at->format('d/m/Y H:i') : ($disposition->approval_status === 'waiting_finance' ? 'Dalam Antrean' : '-') }}</p>
-            </div>
-
-            <!-- 4. Owner -->
-            @php
-                $ownApproval = $disposition->approvals->where('step', 'owner')->first();
-            @endphp
-            <div class="p-3 rounded-xl border text-xs space-y-1
-                @if($ownApproval && in_array($ownApproval->action, ['approved', 'partially_approved'])) border-emerald-200 bg-emerald-50/60 text-emerald-800
-                @elseif($ownApproval && $ownApproval->action === 'rejected') border-rose-200 bg-rose-50 text-rose-800
-                @elseif($ownApproval && $ownApproval->action === 'revision') border-amber-200 bg-amber-50 text-amber-800
-                @elseif($disposition->approval_status === 'waiting_owner') border-blue-300 bg-blue-50/60 text-blue-800
-                @else border-slate-200 bg-slate-50 text-slate-400 @endif">
-                <div class="flex items-center justify-between font-bold">
-                    <span>4. Owner (Direktur)</span>
-                    @if($ownApproval && in_array($ownApproval->action, ['approved', 'partially_approved']))
-                        <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
-                    @elseif($disposition->approval_status === 'waiting_owner')
-                        <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                    @endif
-                </div>
-                <p class="text-[11px] font-medium">{{ $ownApproval?->actor?->name ?? 'Persetujuan Final' }}</p>
-                <p class="text-[10px] text-slate-500">{{ $ownApproval ? $ownApproval->created_at->format('d/m/Y H:i') : ($disposition->approval_status === 'waiting_owner' ? 'Dalam Antrean' : '-') }}</p>
             </div>
         </div>
 

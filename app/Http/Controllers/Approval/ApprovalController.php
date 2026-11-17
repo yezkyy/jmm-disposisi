@@ -39,9 +39,11 @@ class ApprovalController extends Controller
 
         if ($tab === 'pending') {
             if ($targetStatus) {
-                // Jangan tampilkan jika pemohon adalah diri sendiri (self-approval dilarang)
-                $query->where('approval_status', $targetStatus)
-                      ->where('applicant_id', '!=', $user->id);
+                // Jangan tampilkan jika pemohon adalah diri sendiri KECUALI jika tahap Finance/Owner (putusan akhir atas arahan Owner)
+                $query->where('approval_status', $targetStatus);
+                if (!$user->isAdminFinance() && !$user->isOwner()) {
+                    $query->where('applicant_id', '!=', $user->id);
+                }
             } else {
                 $query->whereRaw('1 = 0');
             }
@@ -73,9 +75,11 @@ class ApprovalController extends Controller
         // Hitung total antrean pending untuk badge notifikasi
         $pendingCount = 0;
         if ($targetStatus) {
-            $pendingCount = Disposition::where('approval_status', $targetStatus)
-                ->where('applicant_id', '!=', $user->id)
-                ->count();
+            $pendingQuery = Disposition::where('approval_status', $targetStatus);
+            if (!$user->isAdminFinance() && !$user->isOwner()) {
+                $pendingQuery->where('applicant_id', '!=', $user->id);
+            }
+            $pendingCount = $pendingQuery->count();
         }
 
         $breadcrumbs = [
@@ -93,8 +97,13 @@ class ApprovalController extends Controller
     {
         $user = Auth::user();
 
-        // Cek larangan self-approval
-        if ($disposition->applicant_id === $user->id) {
+        // Cek larangan self-approval (Kecuali tahap putusan akhir oleh Finance/Owner yang bertindak atas arahan Owner)
+        $isFinanceFinalStage = in_array($disposition->approval_status, [
+            Disposition::STATUS_WAITING_FINANCE,
+            Disposition::STATUS_WAITING_OWNER
+        ]) && ($user->isAdminFinance() || $user->isOwner());
+
+        if ($disposition->applicant_id === $user->id && !$isFinanceFinalStage) {
             return redirect()->route('dispositions.show', $disposition)
                 ->with('error', 'Anda adalah pemohon pengajuan ini sehingga tidak dapat melakukan approval terhadap pengajuan sendiri.');
         }

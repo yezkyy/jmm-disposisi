@@ -16,6 +16,8 @@ use App\Services\Disposition\DispositionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class DispositionController extends Controller
@@ -239,7 +241,28 @@ class DispositionController extends Controller
         $num = $disposition->disposition_number ?: 'Draft #' . $disposition->id;
         $old = $disposition->toArray();
 
-        $disposition->delete();
+        DB::transaction(function () use ($disposition) {
+            // Hapus berkas fisik lampiran dan nota jika tersimpan
+            foreach ($disposition->attachments as $att) {
+                if ($att->file_path && Storage::disk('public')->exists($att->file_path)) {
+                    Storage::disk('public')->delete($att->file_path);
+                }
+            }
+            foreach ($disposition->items as $item) {
+                if ($item->receipt_path && Storage::disk('public')->exists($item->receipt_path)) {
+                    Storage::disk('public')->delete($item->receipt_path);
+                }
+            }
+
+            // Hapus relasi anak secara eksplisit agar aman dari Foreign Key constraint (FK 1451)
+            $disposition->attachments()->delete();
+            $disposition->payments()->delete();
+            $disposition->approvals()->delete();
+            $disposition->items()->delete();
+            $disposition->recipients()->delete();
+
+            $disposition->delete();
+        });
 
         AuditLog::record('disposition_deleted', null, $old, []);
 

@@ -309,5 +309,140 @@ class DispositionTest extends TestCase
         $response->assertRedirect(route('dispositions.index'));
         $this->assertDatabaseMissing('dispositions', ['id' => $disp->id]);
     }
+
+    public function test_disposition_number_generation_skips_existing_numbers_without_duplicate_error(): void
+    {
+        // Simulasi kondisi riil: tabel dispositions sudah ada nomor JMM/2026/0001
+        // tetapi tabel disposition_sequences belum ada atau last_number = 0
+        Disposition::create([
+            'disposition_number' => 'JMM/2026/0001',
+            'applicant_id' => $this->pemohon->id,
+            'disposition_date' => '2026-11-17',
+            'subject' => 'Disposisi Lama Nomor 0001',
+            'requested_total' => 1000000,
+            'approval_status' => Disposition::STATUS_WAITING_MANAGER,
+        ]);
+
+        $postData = [
+            'action' => 'submit',
+            'disposition_date' => '2026-11-17',
+            'division_id' => $this->division->id,
+            'subject' => 'Pengajuan Disposisi Baru',
+            'items' => [
+                [
+                    'description' => 'Biaya BBM Kapal',
+                    'qty' => 1,
+                    'unit' => 'Bulan',
+                    'amount' => 500000,
+                ],
+            ],
+            'recipients' => [
+                [
+                    'recipient_name' => 'PT Pertamina',
+                    'recipient_type' => 'vendor',
+                    'primary_bank_account_id' => $this->bankAccount->id,
+                    'notes' => 'KCP Balikpapan Sudirman',
+                ],
+            ],
+        ];
+
+        // Pastikan tidak melempar Exception Duplicate Entry 1062
+        $response = $this->actingAs($this->pemohon)->post(route('dispositions.store'), $postData);
+        $response->assertRedirect();
+
+        $newDisp = Disposition::where('subject', 'Pengajuan Disposisi Baru')->first();
+        $this->assertNotNull($newDisp);
+        $this->assertEquals('JMM/2026/0002', $newDisp->disposition_number);
+    }
+
+    public function test_deleting_disposition_with_payment_records_succeeds_without_foreign_key_error(): void
+    {
+        $adminRole = Role::where('name', 'admin_finance')->first();
+        $admin = User::factory()->create([
+            'role_id' => $adminRole->id,
+            'is_active' => true,
+        ]);
+
+        $disp = Disposition::create([
+            'disposition_number' => 'JMM/2026/0050',
+            'applicant_id' => $this->pemohon->id,
+            'disposition_date' => now()->toDateString(),
+            'subject' => 'Disposisi dengan Pembayaran yang akan dihapus',
+            'requested_total' => 1500000,
+            'approval_status' => Disposition::STATUS_APPROVED,
+        ]);
+
+        $recipient = $disp->recipients()->create([
+            'recipient_name' => 'Rekanan Toko Logistik',
+            'primary_account_name' => 'Toko Logistik',
+            'primary_bank_name' => 'BCA',
+            'primary_account_number' => '88990011',
+            'notes' => 'Cabang Balikpapan Baru',
+        ]);
+
+        // Tambahkan record payment yang sebelumnya menyebabkan SQL 1451 FK constraint fails
+        \App\Models\Payment::create([
+            'disposition_id' => $disp->id,
+            'payment_number' => 'PAY/2026/11/9999',
+            'payment_date' => now()->toDateString(),
+            'amount' => 1500000,
+            'method' => 'transfer',
+            'source_account_id' => $this->bankAccount->id,
+            'recipient_id' => $recipient->id,
+            'recorded_by' => $admin->id,
+            'status' => 'posted',
+        ]);
+
+        // Hapus disposisi
+        $response = $this->actingAs($admin)->delete(route('dispositions.destroy', $disp));
+        $response->assertRedirect(route('dispositions.index'));
+
+        // Pastikan data disposisi dan payment terhapus bersih tanpa error
+        $this->assertDatabaseMissing('dispositions', ['id' => $disp->id]);
+        $this->assertDatabaseMissing('payments', ['payment_number' => 'PAY/2026/11/9999']);
+    }
+
+    public function test_recipient_keterangan_saved_and_image_shows_clean_pending_owner_approval(): void
+    {
+        $disp = Disposition::create([
+            'disposition_number' => 'JMM/2026/0088',
+            'applicant_id' => $this->pemohon->id,
+            'disposition_date' => now()->toDateString(),
+            'subject' => 'Disposisi Pengadaan Solar',
+            'requested_total' => 10000000,
+            'approval_status' => Disposition::STATUS_WAITING_MANAGER,
+        ]);
+
+        $disp->recipients()->create([
+            'recipient_name' => 'PT Pertamina Patra Niaga',
+            'recipient_type' => 'vendor',
+            'primary_account_name' => 'PT Pertamina Patra Niaga',
+            'primary_bank_name' => 'Bank Mandiri',
+            'primary_account_number' => '0700012345678',
+            'notes' => 'KCP Sudirman Balikpapan',
+        ]);
+
+        $disp->items()->create([
+            'description' => 'Solar Industri 1000L',
+            'qty' => 1000,
+            'unit' => 'Liter',
+            'amount' => 10000000,
+        ]);
+
+        $response = $this->actingAs($this->pemohon)->get(route('dispositions.image', $disp));
+        $response->assertStatus(200);
+
+        // Kolom rekening harus menampilkan Keterangan / Cabang bank
+        $response->assertSee('Keterangan');
+        $response->assertSee('KCP Sudirman Balikpapan');
+
+        // Alur persetujuan harus sesuai format:
+        $response->assertSee('1. Diajukan oleh (Admin/Finance)');
+        $response->assertSee('2. Persetujuan Manager');
+        $response->assertSee('3. Keputusan Akhir Finance (Sesuai Arahan Owner)');
+        $response->assertSee('( Menunggu Persetujuan Manager )');
+        $response->assertDontSee('ACC OWNER');
+        $response->assertDontSee('( Belum Ada ACC Owner )');
+    }
 }
 

@@ -235,6 +235,6 @@ class EndToEndRevisionWorkflowTest extends TestCase
         $respImage->assertSee('Filter Oli Sakura C-1002');
         $respImage->assertSee('1.375.000');
         $respImage->assertSee('ACC MANAGER');
-        $respImage->assertSee('ACC OWNER');
+        $respImage->assertSee('ACC FINANCE (ARAHAN OWNER)');
     }
 }

@@ -23,12 +23,7 @@ class ApprovalService
         ?float $approvedAmount = null,
         ?string $notes = null
     ): DispositionApproval {
-        // 1. Validasi Larangan Self-Approval
-        if ($actor->id === $disposition->applicant_id) {
-            throw new InvalidArgumentException('Pemohon tidak diizinkan menyetujui pengajuannya sendiri.');
-        }
-
-        // 2. Tentukan tahap saat ini & validasi wewenang role
+        // 1. Tentukan tahap saat ini & validasi wewenang role
         $stage = match ($disposition->approval_status) {
             Disposition::STATUS_WAITING_MANAGER => DispositionApproval::STAGE_MANAGER,
             Disposition::STATUS_WAITING_FINANCE => DispositionApproval::STAGE_FINANCE,
@@ -38,6 +33,16 @@ class ApprovalService
 
         if (!$stage) {
             throw new InvalidArgumentException('Disposisi tidak sedang berada dalam antrean approval aktif.');
+        }
+
+        // 2. Validasi Larangan Self-Approval
+        // Khusus tahap Finance/Owner: Jika pemohon adalah Finance (misal Indah Novitasari), Finance berwenang
+        // mengeksekusi putusan akhir atas arahan Owner setelah diverifikasi oleh Manager.
+        $isFinanceFinalStage = in_array($stage, [DispositionApproval::STAGE_FINANCE, DispositionApproval::STAGE_OWNER])
+            && ($actor->isAdminFinance() || $actor->isOwner());
+
+        if ($actor->id === $disposition->applicant_id && !$isFinanceFinalStage) {
+            throw new InvalidArgumentException('Pemohon tidak diizinkan menyetujui pengajuannya sendiri.');
         }
 
         // Verifikasi kesesuaian peran

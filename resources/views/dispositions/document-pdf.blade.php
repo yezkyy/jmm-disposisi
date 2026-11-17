@@ -293,7 +293,7 @@
                 <th style="width: 25%;">Nama Penerima</th>
                 <th style="width: 35%;">Rekening Utama 1 (Wajib)</th>
                 <th style="width: 20%;">Rekening Cadangan 2</th>
-                <th style="width: 15%;" class="text-right">Nominal Alokasi</th>
+                <th style="width: 15%;">Keterangan</th>
             </tr>
         </thead>
         <tbody>
@@ -316,8 +316,8 @@
                             <span style="color: #94a3b8;">-</span>
                         @endif
                     </td>
-                    <td class="text-right font-mono font-bold">
-                        Rp {{ number_format($rec->amount, 2, ',', '.') }}
+                    <td style="font-size: 7.5pt; color: #334155;">
+                        {{ $rec->notes ?: '-' }}
                     </td>
                 </tr>
             @endforeach
@@ -334,22 +334,22 @@
     <table class="signatures-table">
         <tr>
             <td>
-                <div class="sig-role">1. Diajukan Oleh:</div>
+                <div class="sig-role">1. Diajukan oleh (Admin/Finance):</div>
                 <div class="sig-space"></div>
-                <div class="sig-name">{{ $disposition->applicant?->name ?? 'Pemohon' }}</div>
+                <div class="sig-name">{{ $disposition->applicant?->name ?? 'Admin / Finance' }}</div>
                 <div class="sig-date">{{ $disposition->disposition_date ? $disposition->disposition_date->format('d/m/Y') : '' }}</div>
             </td>
             <td>
-                <div class="sig-role">2. Disetujui (ACC Manager):</div>
+                <div class="sig-role">2. Persetujuan Manager:</div>
                 <div class="sig-space"></div>
                 <div class="sig-name">{{ $mgrAppr?->actor?->name ?? '( Manager )' }}</div>
-                <div class="sig-date">{{ $mgrAppr ? $mgrAppr->created_at->format('d/m/Y') : 'Menunggu' }}</div>
+                <div class="sig-date">{{ $mgrAppr ? $mgrAppr->created_at->format('d/m/Y') : ($disposition->approval_status === 'waiting_manager' ? 'Menunggu Persetujuan' : '-') }}</div>
             </td>
             <td>
-                <div class="sig-role">3. Disetujui Final (ACC Finance / Owner):</div>
+                <div class="sig-role">3. Keputusan Akhir Finance (Sesuai Arahan Owner):</div>
                 <div class="sig-space"></div>
-                <div class="sig-name">{{ $finAppr?->actor?->name ?? '( Admin / Finance )' }}</div>
-                <div class="sig-date">{{ $finAppr ? $finAppr->created_at->format('d/m/Y') : ($disposition->approval_status === 'approved' ? 'ACC Selesai' : 'Menunggu') }}</div>
+                <div class="sig-name">{{ ($finAppr && $disposition->approval_status === 'approved') ? $finAppr->actor?->name : '( Finance )' }}</div>
+                <div class="sig-date">{{ ($finAppr && $disposition->approval_status === 'approved') ? $finAppr->created_at->format('d/m/Y') : ($disposition->approval_status === 'waiting_finance' ? 'Menunggu Keputusan' : '-') }}</div>
             </td>
         </tr>
     </table>

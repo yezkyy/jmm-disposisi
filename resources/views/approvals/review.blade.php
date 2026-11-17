@@ -127,9 +127,12 @@
                             <h3 class="text-xs font-bold text-slate-800">{{ $rec->recipient_name }}</h3>
                             <span class="text-[10px] font-semibold uppercase text-slate-400">{{ $rec->recipient_type_label }}</span>
                         </div>
-                        <span class="text-xs font-extrabold text-primary-700 font-mono">
-                            Rp {{ number_format($rec->amount, 2, ',', '.') }}
-                        </span>
+                        @if ($rec->notes)
+                            <div class="text-right max-w-[200px]">
+                                <span class="text-[10px] text-slate-400 block uppercase font-semibold">Keterangan / Cabang</span>
+                                <span class="text-xs font-medium text-slate-700">{{ $rec->notes }}</span>
+                            </div>
+                        @endif
                     </div>
 
                     <div class="p-2.5 rounded-lg bg-white border border-slate-200/80 text-xs">
