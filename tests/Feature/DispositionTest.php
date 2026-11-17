@@ -286,6 +286,59 @@ class DispositionTest extends TestCase
         $this->assertEquals(1, $disposition->attachments()->count());
     }
 
+    public function test_store_disposition_without_qty_and_unit_and_with_invoice_number(): void
+    {
+        $postData = [
+            'action' => 'submit',
+            'disposition_date' => now()->toDateString(),
+            'division_id' => $this->division->id,
+            'subject' => 'Operasional Tambal Ban dan Uang Jalan',
+            'invoice_number' => 'INV/OPERASIONAL/2026/01',
+            'items' => [
+                [
+                    'invoice_number' => 'INV/OPERASIONAL/2026/01',
+                    'description' => 'Tambal ban mobil jmm armada logistik',
+                    'qty' => '', // kosong / tidak diisi
+                    'unit' => '', // kosong / tidak diisi
+                    'amount' => 155000,
+                ],
+                [
+                    'invoice_number' => null,
+                    'description' => 'Uang makan supir tambahan',
+                    'qty' => null,
+                    'unit' => null,
+                    'amount' => 100000,
+                ],
+            ],
+            'recipients' => [
+                [
+                    'recipient_name' => 'Bambang Supir',
+                    'recipient_type' => 'driver',
+                    'primary_bank_account_id' => $this->bankAccount->id,
+                    'notes' => 'Operasional Balikpapan',
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->pemohon)->post(route('dispositions.store'), $postData);
+        $response->assertSessionHasNoErrors();
+
+        $disp = Disposition::where('subject', 'Operasional Tambal Ban dan Uang Jalan')->first();
+        $this->assertNotNull($disp);
+        $this->assertEquals('INV/OPERASIONAL/2026/01', $disp->invoice_number);
+        $this->assertEquals(255000, (float) $disp->requested_total);
+
+        $items = $disp->items()->orderBy('id')->get();
+        $this->assertCount(2, $items);
+        $this->assertNull($items[0]->qty);
+        $this->assertNull($items[0]->unit);
+        $this->assertEquals('INV/OPERASIONAL/2026/01', $items[0]->invoice_number);
+
+        $this->assertNull($items[1]->qty);
+        $this->assertNull($items[1]->unit);
+        $this->assertNull($items[1]->invoice_number);
+    }
+
     public function test_admin_finance_can_delete_disposition(): void
     {
         $adminRole = Role::where('name', 'admin_finance')->first();
@@ -442,7 +495,87 @@ class DispositionTest extends TestCase
         $response->assertSee('3. Keputusan Akhir Finance (Sesuai Arahan Owner)');
         $response->assertSee('( Menunggu Persetujuan Manager )');
         $response->assertDontSee('ACC OWNER');
-        $response->assertDontSee('( Belum Ada ACC Owner )');
+        // Kolom nota / bukti tidak ditampilkan pada format gambar
+        $response->assertDontSee('Nota / Bukti');
+    }
+
+    public function test_optional_invoice_number_and_dynamic_qty_unit_rendering(): void
+    {
+        // Kasus 1: Disposisi operasional tanpa nomor invoice & tanpa Qty/Satuan (misal uang jalan supir)
+        $dispOperational = Disposition::create([
+            'disposition_number' => 'JMM/2026/0089',
+            'applicant_id' => $this->pemohon->id,
+            'disposition_date' => now()->toDateString(),
+            'subject' => 'Uang Jalan dan Operasional Armada',
+            'requested_total' => 500000,
+            'approval_status' => Disposition::STATUS_APPROVED,
+        ]);
+
+        $dispOperational->recipients()->create([
+            'recipient_name' => 'Bambang Supir',
+            'recipient_type' => 'driver',
+            'primary_account_name' => 'Bambang',
+            'primary_bank_name' => 'BCA',
+            'primary_account_number' => '1234567890',
+            'notes' => 'Cabang Samarinda',
+        ]);
+
+        $dispOperational->items()->create([
+            'description' => 'Uang jalan armada logistik tujuan Samarinda',
+            'qty' => null,
+            'unit' => null,
+            'amount' => 500000,
+        ]);
+
+        $respOp = $this->actingAs($this->pemohon)->get(route('dispositions.image', $dispOperational));
+        $respOp->assertStatus(200);
+
+        // Pada format gambar, karena tidak ada qty & satuan, kolom Qty dan Satuan TIDAK boleh muncul
+        $respOp->assertDontSee('<th class="py-2 px-2 text-right border-r border-slate-300 w-16">Qty</th>', false);
+        $respOp->assertDontSee('<th class="py-2 px-2 text-center border-r border-slate-300 w-20">Satuan</th>', false);
+        // Karena tidak ada nomor invoice, No. Invoice tidak muncul di header metadata
+        $respOp->assertDontSee('No. Invoice');
+
+        // Kasus 2: Disposisi dengan No Invoice & dengan Qty/Satuan (pengadaan barang)
+        $dispPurchase = Disposition::create([
+            'disposition_number' => 'JMM/2026/0090',
+            'invoice_number' => 'INV-JMM-2026-99',
+            'applicant_id' => $this->pemohon->id,
+            'disposition_date' => now()->toDateString(),
+            'subject' => 'Pengadaan Sparepart Truk',
+            'requested_total' => 1250000,
+            'approval_status' => Disposition::STATUS_APPROVED,
+        ]);
+
+        $dispPurchase->recipients()->create([
+            'recipient_name' => 'Toko Sparepart Jaya',
+            'recipient_type' => 'vendor',
+            'primary_account_name' => 'Toko Sparepart Jaya',
+            'primary_bank_name' => 'Bank Mandiri',
+            'primary_account_number' => '9876543210',
+            'notes' => 'Invoice INV-JMM-2026-99',
+        ]);
+
+        $dispPurchase->items()->create([
+            'invoice_number' => 'INV-JMM-2026-99',
+            'description' => 'Kampas Rem Truk Fuso',
+            'qty' => 4,
+            'unit' => 'Set',
+            'amount' => 1250000,
+        ]);
+
+        $respPurchase = $this->actingAs($this->pemohon)->get(route('dispositions.image', $dispPurchase));
+        $respPurchase->assertStatus(200);
+
+        // Header Invoice muncul
+        $respPurchase->assertSee('No. Invoice');
+        $respPurchase->assertSee('INV-JMM-2026-99');
+
+        // Kolom Qty dan Satuan harus muncul
+        $respPurchase->assertSee('Qty');
+        $respPurchase->assertSee('Satuan');
+        $respPurchase->assertSee('4');
+        $respPurchase->assertSee('Set');
     }
 }
 

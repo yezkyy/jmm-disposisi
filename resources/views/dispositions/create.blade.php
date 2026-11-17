@@ -78,21 +78,38 @@
                 </div>
             </div>
 
-            <!-- Perihal -->
-            <div>
-                <label for="subject" class="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">
-                    Perihal Pengeluaran <span class="text-rose-500">*</span>
-                </label>
-                <input 
-                    type="text" 
-                    id="subject" 
-                    name="subject" 
-                    value="{{ old('subject') }}" 
-                    required 
-                    placeholder="Contoh: Pengadaan Solar Armada Balikpapan - Samarinda Rute Logistik"
-                    class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
-                >
-                @error('subject') <p class="text-xs text-rose-600 mt-1">{{ $message }}</p> @enderror
+            <!-- Perihal & No. Invoice -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2">
+                    <label for="subject" class="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">
+                        Perihal Pengeluaran <span class="text-rose-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="subject" 
+                        name="subject" 
+                        value="{{ old('subject') }}" 
+                        required 
+                        placeholder="Contoh: Pengadaan Solar Armada Balikpapan - Samarinda Rute Logistik"
+                        class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+                    >
+                    @error('subject') <p class="text-xs text-rose-600 mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="invoice_number" class="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">
+                        Nomor Invoice / Tagihan <span class="text-slate-400 font-normal lowercase">(opsional)</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="invoice_number" 
+                        name="invoice_number" 
+                        value="{{ old('invoice_number') }}" 
+                        placeholder="Contoh: INV/2026/001"
+                        class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium font-mono"
+                    >
+                    @error('invoice_number') <p class="text-xs text-rose-600 mt-1">{{ $message }}</p> @enderror
+                </div>
             </div>
 
             <!-- Deskripsi / Catatan Tambahan -->
@@ -132,8 +149,9 @@
                         <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px] uppercase tracking-wider">
                             <th class="py-2.5 px-2 text-center w-8">#</th>
                             <th class="py-2.5 px-3">Uraian Kebutuhan <span class="text-rose-500">*</span></th>
-                            <th class="py-2.5 px-2 text-right w-20">Qty <span class="text-rose-500">*</span></th>
-                            <th class="py-2.5 px-2 text-center w-24">Satuan <span class="text-rose-500">*</span></th>
+                            <th class="py-2.5 px-2 w-32">No. Invoice <span class="text-slate-400 font-normal lowercase">(opsi)</span></th>
+                            <th class="py-2.5 px-2 text-right w-20">Qty</th>
+                            <th class="py-2.5 px-2 text-center w-24">Satuan</th>
                             <th class="py-2.5 px-3 text-right w-36">Subtotal (Rp) <span class="text-rose-500">*</span></th>
                             <th class="py-2.5 px-3 w-52">Upload Nota / Bukti</th>
                             <th class="py-2.5 px-2 text-center w-10">Aksi</th>
@@ -147,10 +165,13 @@
                                 <input type="text" name="items[0][description]" required placeholder="Contoh: Pembelian Oli Mesin, Sparepart, ATK..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium">
                             </td>
                             <td class="py-2.5 px-2 align-top">
-                                <input type="number" step="any" min="0.01" name="items[0][qty]" value="1" required class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <input type="text" name="items[0][invoice_number]" placeholder="No. Inv..." class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
                             </td>
                             <td class="py-2.5 px-2 align-top">
-                                <input type="text" name="items[0][unit]" value="Pcs" placeholder="Pcs, unit, liter..." required class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <input type="number" step="any" min="0.01" name="items[0][qty]" value="" placeholder="1" class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </td>
+                            <td class="py-2.5 px-2 align-top">
+                                <input type="text" name="items[0][unit]" value="" placeholder="Pcs, unit..." class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                             </td>
                             <td class="py-2.5 px-3 align-top">
                                 <input type="number" step="any" name="items[0][amount]" required min="0" placeholder="0" oninput="calculateTotal()" class="item-amount w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-right font-mono font-semibold">
@@ -426,7 +447,7 @@
         }
     }
 
-    // Tambah Baris Rincian Item (Uraian, Qty, Satuan, Subtotal, Upload Nota)
+    // Tambah Baris Rincian Item (Uraian, No. Invoice, Qty, Satuan, Subtotal, Upload Nota)
     function addItemRow() {
         const container = document.getElementById('items-container');
         const tr = document.createElement('tr');
@@ -438,10 +459,13 @@
                 <input type="text" name="items[${itemIndex}][description]" required placeholder="Contoh: Pembelian Oli Mesin, Sparepart, ATK..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium">
             </td>
             <td class="py-2.5 px-2 align-top">
-                <input type="number" step="any" min="0.01" name="items[${itemIndex}][qty]" value="1" required class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <input type="text" name="items[${itemIndex}][invoice_number]" placeholder="No. Inv (opsi)" class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
             </td>
             <td class="py-2.5 px-2 align-top">
-                <input type="text" name="items[${itemIndex}][unit]" value="Pcs" placeholder="Pcs, unit, liter..." required class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <input type="number" step="any" min="0.01" name="items[${itemIndex}][qty]" placeholder="Qty" class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </td>
+            <td class="py-2.5 px-2 align-top">
+                <input type="text" name="items[${itemIndex}][unit]" placeholder="Satuan (opsi)" class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
             </td>
             <td class="py-2.5 px-3 align-top">
                 <input type="number" step="any" name="items[${itemIndex}][amount]" required min="0" placeholder="0" oninput="calculateTotal()" class="item-amount w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-right font-mono font-semibold">

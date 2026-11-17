@@ -16,6 +16,7 @@ class StoreDispositionRequest extends FormRequest
         return [
             'disposition_date' => ['required', 'date'],
             'subject' => ['required', 'string', 'max:255'],
+            'invoice_number' => ['nullable', 'string', 'max:100'],
             'division_id' => ['nullable', 'exists:divisions,id'],
             'description' => ['nullable', 'string'],
             'ppn' => ['nullable'],
@@ -26,6 +27,7 @@ class StoreDispositionRequest extends FormRequest
             'items.*.category_id' => ['nullable'],
             'items.*.item_name' => ['nullable', 'string', 'max:255'],
             'items.*.description' => ['nullable', 'string'],
+            'items.*.invoice_number' => ['nullable', 'string', 'max:100'],
             'items.*.qty' => ['nullable'],
             'items.*.quantity' => ['nullable'],
             'items.*.unit' => ['nullable', 'string', 'max:50'],

@@ -29,6 +29,7 @@ class Disposition extends Model
 
     protected $fillable = [
         'disposition_number',
+        'invoice_number',
         'disposition_date',
         'subject',
         'applicant_id',

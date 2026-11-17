@@ -14,6 +14,7 @@ class DispositionItem extends Model
         'disposition_id',
         'category_id',
         'description',
+        'invoice_number',
         'qty',
         'unit',
         'amount',
@@ -32,19 +33,19 @@ class DispositionItem extends Model
         return $this->description ?? '';
     }
 
-    public function getQuantityAttribute(): float
+    public function getQuantityAttribute(): ?float
     {
-        return (float) ($this->qty ?? 1.0);
+        return !is_null($this->qty) && trim((string)$this->qty) !== '' ? (float) $this->qty : null;
     }
 
-    public function getUnitAttribute(): string
+    public function getUnitAttribute(): ?string
     {
-        return $this->attributes['unit'] ?? 'Pcs';
+        return $this->attributes['unit'] ?? null;
     }
 
     public function getUnitPriceAttribute(): float
     {
-        $quantity = (float) ($this->qty ?? 1.0);
+        $quantity = (float) ($this->qty ?? 0);
         if ($quantity > 0) {
             return round((float) ($this->amount ?? 0) / $quantity, 2);
         }

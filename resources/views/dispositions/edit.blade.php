@@ -92,21 +92,38 @@
                 </div>
             </div>
 
-            <!-- Perihal -->
-            <div>
-                <label for="subject" class="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">
-                    Perihal Pengeluaran <span class="text-rose-500">*</span>
-                </label>
-                <input 
-                    type="text" 
-                    id="subject" 
-                    name="subject" 
-                    value="{{ old('subject', $disposition->subject) }}" 
-                    required 
-                    placeholder="Contoh: Pengadaan Solar Armada Balikpapan - Samarinda Rute Logistik"
-                    class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
-                >
-                @error('subject') <p class="text-xs text-rose-600 mt-1">{{ $message }}</p> @enderror
+            <!-- Perihal & No. Invoice -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2">
+                    <label for="subject" class="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">
+                        Perihal Pengeluaran <span class="text-rose-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="subject" 
+                        name="subject" 
+                        value="{{ old('subject', $disposition->subject) }}" 
+                        required 
+                        placeholder="Contoh: Pengadaan Solar Armada Balikpapan - Samarinda Rute Logistik"
+                        class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+                    >
+                    @error('subject') <p class="text-xs text-rose-600 mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="invoice_number" class="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">
+                        Nomor Invoice / Tagihan <span class="text-slate-400 font-normal lowercase">(opsional)</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="invoice_number" 
+                        name="invoice_number" 
+                        value="{{ old('invoice_number', $disposition->invoice_number) }}" 
+                        placeholder="Contoh: INV/2026/001"
+                        class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium font-mono"
+                    >
+                    @error('invoice_number') <p class="text-xs text-rose-600 mt-1">{{ $message }}</p> @enderror
+                </div>
             </div>
 
             <!-- Deskripsi / Catatan Tambahan -->
@@ -147,8 +164,9 @@
                         <tr class="border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                             <th class="py-2.5 pr-2 w-8 text-center">#</th>
                             <th class="py-2.5 px-2 min-w-[200px]">Uraian Kebutuhan <span class="text-rose-500">*</span></th>
-                            <th class="py-2.5 px-2 w-20 text-right">Qty <span class="text-rose-500">*</span></th>
-                            <th class="py-2.5 px-2 w-24 text-center">Satuan <span class="text-rose-500">*</span></th>
+                            <th class="py-2.5 px-2 w-32">No. Invoice <span class="text-slate-400 font-normal lowercase">(opsi)</span></th>
+                            <th class="py-2.5 px-2 w-20 text-right">Qty</th>
+                            <th class="py-2.5 px-2 w-24 text-center">Satuan</th>
                             <th class="py-2.5 px-2 min-w-[140px] text-right">Subtotal (Rp) <span class="text-rose-500">*</span></th>
                             <th class="py-2.5 px-2 min-w-[180px]">Nota / Bukti Pengeluaran</th>
                             <th class="py-2.5 pl-2 w-10 text-center">Aksi</th>
@@ -173,12 +191,21 @@
                                 </td>
                                 <td class="py-2 px-2 align-top">
                                     <input 
+                                        type="text" 
+                                        name="items[{{ $idx }}][invoice_number]" 
+                                        value="{{ $item['invoice_number'] ?? '' }}" 
+                                        placeholder="No. Inv (opsi)"
+                                        class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                    >
+                                </td>
+                                <td class="py-2 px-2 align-top">
+                                    <input 
                                         type="number" 
                                         step="any" 
                                         min="0.01" 
                                         name="items[{{ $idx }}][qty]" 
-                                        value="{{ $item['qty'] ?? ($item['quantity'] ?? 1) }}" 
-                                        required 
+                                        value="{{ $item['qty'] ?? ($item['quantity'] ?? '') }}" 
+                                        placeholder="Qty" 
                                         class="item-qty w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     >
                                 </td>
@@ -186,9 +213,8 @@
                                     <input 
                                         type="text" 
                                         name="items[{{ $idx }}][unit]" 
-                                        value="{{ $item['unit'] ?? 'Pcs' }}" 
-                                        placeholder="Pcs, unit, liter..." 
-                                        required
+                                        value="{{ $item['unit'] ?? '' }}" 
+                                        placeholder="Satuan (opsi)" 
                                         class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     >
                                 </td>
@@ -670,12 +696,19 @@
             </td>
             <td class="py-2 px-2 align-top">
                 <input 
+                    type="text" 
+                    name="items[${itemIndex}][invoice_number]" 
+                    placeholder="No. Inv (opsi)" 
+                    class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+            </td>
+            <td class="py-2 px-2 align-top">
+                <input 
                     type="number" 
                     step="any" 
                     min="0.01" 
                     name="items[${itemIndex}][qty]" 
-                    value="1" 
-                    required 
+                    placeholder="Qty" 
                     class="item-qty w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
             </td>
@@ -683,9 +716,7 @@
                 <input 
                     type="text" 
                     name="items[${itemIndex}][unit]" 
-                    value="Pcs" 
-                    placeholder="Pcs, unit, liter..." 
-                    required
+                    placeholder="Satuan (opsi)" 
                     class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
             </td>

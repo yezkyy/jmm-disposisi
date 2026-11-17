@@ -214,6 +214,12 @@
                     <span class="text-slate-400 block text-[10px] uppercase font-semibold">Perihal</span>
                     <span class="font-bold text-slate-800 text-sm">{{ $disposition->subject }}</span>
                 </div>
+                @if ($disposition->invoice_number)
+                    <div>
+                        <span class="text-slate-400 block text-[10px] uppercase font-semibold">Nomor Invoice</span>
+                        <span class="font-bold text-primary-700 font-mono">{{ $disposition->invoice_number }}</span>
+                    </div>
+                @endif
                 <div>
                     <span class="text-slate-400 block text-[10px] uppercase font-semibold">Pemohon</span>
                     <span class="font-semibold text-slate-700">{{ $disposition->applicant?->name }}</span>
@@ -237,6 +243,16 @@
         </div>
 
         <!-- Kolom Kanan: Rincian Item (2 cols) -->
+        @php
+            $hasItemInvoice = $disposition->items->contains(fn($i) => !empty(trim((string)$i->invoice_number)));
+            $hasQtyUnit = $disposition->items->contains(function($i) {
+                $hasQty = !is_null($i->qty) && (float)$i->qty > 0;
+                $unit = trim((string)$i->unit);
+                $hasUnit = !empty($unit) && $unit !== '-';
+                return $hasQty || $hasUnit;
+            });
+            $labelColspan = 1 + ($hasItemInvoice ? 1 : 0) + 1 + ($hasQtyUnit ? 2 : 0);
+        @endphp
         <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
             <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 pb-2 border-b border-slate-100 flex items-center justify-between">
                 <span class="flex items-center gap-2">
@@ -251,9 +267,14 @@
                     <thead>
                         <tr class="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                             <th class="py-2.5 pr-2 w-8 text-center">#</th>
+                            @if ($hasItemInvoice)
+                                <th class="py-2.5 px-2">No. Invoice</th>
+                            @endif
                             <th class="py-2.5 px-2">Uraian Kebutuhan</th>
-                            <th class="py-2.5 px-2 text-right">Qty</th>
-                            <th class="py-2.5 px-2 text-center">Satuan</th>
+                            @if ($hasQtyUnit)
+                                <th class="py-2.5 px-2 text-right">Qty</th>
+                                <th class="py-2.5 px-2 text-center">Satuan</th>
+                            @endif
                             <th class="py-2.5 px-2 text-right">Subtotal</th>
                             <th class="py-2.5 pl-2 text-center">Nota / Bukti</th>
                         </tr>
@@ -262,9 +283,14 @@
                         @foreach ($disposition->items as $idx => $item)
                             <tr class="hover:bg-slate-50/50 transition">
                                 <td class="py-3 pr-2 text-center text-slate-400 font-semibold">{{ $idx + 1 }}</td>
+                                @if ($hasItemInvoice)
+                                    <td class="py-3 px-2 font-mono text-[11px] text-slate-600">{{ $item->invoice_number ?: '-' }}</td>
+                                @endif
                                 <td class="py-3 px-2 font-semibold text-slate-800">{{ $item->description }}</td>
-                                <td class="py-3 px-2 text-right font-mono">{{ rtrim(rtrim(number_format((float) ($item->qty ?? 1), 2, ',', '.'), '0'), ',') }}</td>
-                                <td class="py-3 px-2 text-center text-slate-500">{{ $item->unit ?? 'Pcs' }}</td>
+                                @if ($hasQtyUnit)
+                                    <td class="py-3 px-2 text-right font-mono">{{ !is_null($item->qty) ? rtrim(rtrim(number_format((float) $item->qty, 2, ',', '.'), '0'), ',') : '-' }}</td>
+                                    <td class="py-3 px-2 text-center text-slate-500">{{ $item->unit ?: '-' }}</td>
+                                @endif
                                 <td class="py-3 px-2 text-right font-mono font-bold text-slate-800">Rp {{ number_format((float) $item->amount, 2, ',', '.') }}</td>
                                 <td class="py-3 pl-2 text-center">
                                     @if($item->receipt_path)
@@ -282,14 +308,14 @@
                     <tfoot>
                         @if ((float) $disposition->ppn > 0)
                             <tr class="border-t border-slate-100 font-bold text-xs bg-slate-50/30">
-                                <td colspan="4" class="py-2 px-2 text-right uppercase tracking-wider text-slate-500 text-[10px]">Subtotal Rincian:</td>
+                                <td colspan="{{ $labelColspan }}" class="py-2 px-2 text-right uppercase tracking-wider text-slate-500 text-[10px]">Subtotal Rincian:</td>
                                 <td class="py-2 px-2 text-right font-mono text-slate-700">
                                     Rp {{ number_format($disposition->items->sum('amount'), 2, ',', '.') }}
                                 </td>
                                 <td></td>
                             </tr>
                             <tr class="border-t border-slate-100 font-bold text-xs bg-slate-50/30">
-                                <td colspan="4" class="py-2 px-2 text-right uppercase tracking-wider text-slate-500 text-[10px]">PPN:</td>
+                                <td colspan="{{ $labelColspan }}" class="py-2 px-2 text-right uppercase tracking-wider text-slate-500 text-[10px]">PPN:</td>
                                 <td class="py-2 px-2 text-right font-mono text-slate-700">
                                     Rp {{ number_format((float) $disposition->ppn, 2, ',', '.') }}
                                 </td>
@@ -297,7 +323,7 @@
                             </tr>
                         @endif
                         <tr class="border-t-2 border-slate-200 font-bold text-xs bg-slate-50/70">
-                            <td colspan="4" class="py-3 px-2 text-right uppercase tracking-wider text-slate-700">Total Pengajuan:</td>
+                            <td colspan="{{ $labelColspan }}" class="py-3 px-2 text-right uppercase tracking-wider text-slate-700">Total Pengajuan:</td>
                             <td class="py-3 px-2 text-right font-mono text-primary-700 text-sm font-extrabold">
                                 Rp {{ number_format($disposition->requested_total, 2, ',', '.') }}
                             </td>

@@ -199,6 +199,13 @@
             <td class="meta-colon">:</td>
             <td class="meta-value">{{ $disposition->disposition_date ? $disposition->disposition_date->format('d/m/Y') : '-' }}</td>
         </tr>
+        @if (!empty($disposition->invoice_number))
+            <tr>
+                <td class="meta-label">No. Invoice</td>
+                <td class="meta-colon">:</td>
+                <td colspan="4" class="meta-value font-mono font-bold" style="color: #026ec4;">{{ $disposition->invoice_number }}</td>
+            </tr>
+        @endif
         <tr>
             <td class="meta-label">Pemohon</td>
             <td class="meta-colon">:</td>
@@ -223,54 +230,79 @@
     </table>
 
     <!-- 1. Rincian Anggaran Item Pengeluaran -->
+    @php
+        $hasItemInvoice = $disposition->items->contains(fn($i) => !empty(trim((string)$i->invoice_number)));
+        $hasQtyUnit = $disposition->items->contains(function($i) {
+            $hasQty = !is_null($i->qty) && (float)$i->qty > 0;
+            $unit = trim((string)$i->unit);
+            $hasUnit = !empty($unit) && $unit !== '-';
+            return $hasQty || $hasUnit;
+        });
+        $pdfCols = 2 + ($hasItemInvoice ? 1 : 0) + ($hasQtyUnit ? 2 : 0) + 1;
+        $pdfFooterColspan = $pdfCols - 1;
+    @endphp
     <div class="section-header">1. Rincian Kebutuhan & Biaya Pengeluaran</div>
     <table class="content-table">
         <thead>
             <tr>
                 <th style="width: 5%;" class="text-center">No</th>
-                <th style="width: 50%;">Uraian Kebutuhan</th>
-                <th style="width: 12%;" class="text-right">Qty</th>
-                <th style="width: 13%;" class="text-center">Satuan</th>
+                @if ($hasItemInvoice)
+                    <th style="width: 18%;">No. Invoice</th>
+                @endif
+                <th style="{{ $hasQtyUnit ? ($hasItemInvoice ? 'width: 42%;' : 'width: 50%;') : ($hasItemInvoice ? 'width: 57%;' : 'width: 75%;') }}">Uraian Kebutuhan</th>
+                @if ($hasQtyUnit)
+                    <th style="width: 10%;" class="text-right">Qty</th>
+                    <th style="width: 10%;" class="text-center">Satuan</th>
+                @endif
                 <th style="width: 20%;" class="text-right">Subtotal</th>
             </tr>
         </thead>
         <tbody>
             @php $subtotalItems = 0; @endphp
-            @foreach ($disposition->items as $idx => $item)
+            @forelse ($disposition->items as $idx => $item)
                 @php $subtotalItems += (float) $item->amount; @endphp
                 <tr>
                     <td class="text-center">{{ $idx + 1 }}</td>
+                    @if ($hasItemInvoice)
+                        <td class="font-mono" style="font-size: 7.5pt;">{{ $item->invoice_number ?: '-' }}</td>
+                    @endif
                     <td><strong>{{ $item->description }}</strong></td>
-                    <td class="text-right font-mono">{{ rtrim(rtrim(number_format((float) ($item->qty ?? 1), 2, ',', '.'), '0'), ',') }}</td>
-                    <td class="text-center">{{ $item->unit ?? 'Pcs' }}</td>
+                    @if ($hasQtyUnit)
+                        <td class="text-right font-mono">{{ !is_null($item->qty) ? rtrim(rtrim(number_format((float) $item->qty, 2, ',', '.'), '0'), ',') : '-' }}</td>
+                        <td class="text-center">{{ $item->unit ?: '-' }}</td>
+                    @endif
                     <td class="text-right font-mono font-bold">Rp {{ number_format((float) $item->amount, 2, ',', '.') }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="{{ $pdfCols }}" class="text-center" style="color: #94a3b8; padding: 12px;">Tidak ada rincian pengeluaran.</td>
+                </tr>
+            @endforelse
         </tbody>
         <tfoot>
             <tr style="background-color: #f8fafc; font-weight: bold;">
-                <td colspan="4" class="text-right" style="padding: 5px 6px; text-transform: uppercase;">Subtotal Rincian Kebutuhan:</td>
+                <td colspan="{{ $pdfFooterColspan }}" class="text-right" style="padding: 5px 6px; text-transform: uppercase;">Subtotal Rincian Kebutuhan:</td>
                 <td class="text-right font-mono font-bold" style="padding: 5px 6px;">
                     Rp {{ number_format($subtotalItems, 2, ',', '.') }}
                 </td>
             </tr>
             @if ((float) $disposition->ppn > 0)
                 <tr style="background-color: #f8fafc; font-weight: bold;">
-                    <td colspan="4" class="text-right" style="padding: 5px 6px; text-transform: uppercase;">PPN:</td>
+                    <td colspan="{{ $pdfFooterColspan }}" class="text-right" style="padding: 5px 6px; text-transform: uppercase;">PPN:</td>
                     <td class="text-right font-mono font-bold" style="padding: 5px 6px;">
                         Rp {{ number_format((float) $disposition->ppn, 2, ',', '.') }}
                     </td>
                 </tr>
             @endif
             <tr style="background-color: #f0f9ff; font-weight: bold;">
-                <td colspan="4" class="text-right" style="padding: 5px 6px; text-transform: uppercase; color: #026ec4;">Total Nominal Pengajuan:</td>
+                <td colspan="{{ $pdfFooterColspan }}" class="text-right" style="padding: 5px 6px; text-transform: uppercase; color: #026ec4;">Total Nominal Pengajuan:</td>
                 <td class="text-right font-mono font-bold" style="padding: 5px 6px; color: #026ec4;">
                     Rp {{ number_format((float) $disposition->requested_total, 2, ',', '.') }}
                 </td>
             </tr>
             @if ($disposition->final_approved_total && (float)$disposition->final_approved_total != (float)$disposition->requested_total)
                 <tr style="background-color: #f0fdf4; font-weight: bold;">
-                    <td colspan="4" class="text-right" style="padding: 5px 6px; text-transform: uppercase; color: #166534;">Total Nominal Disetujui (ACC Akhir):</td>
+                    <td colspan="{{ $pdfFooterColspan }}" class="text-right" style="padding: 5px 6px; text-transform: uppercase; color: #166534;">Total Nominal Disetujui (ACC Akhir):</td>
                     <td class="text-right font-mono font-bold" style="padding: 5px 6px; color: #166534;">
                         Rp {{ number_format((float) $disposition->final_approved_total, 2, ',', '.') }}
                     </td>

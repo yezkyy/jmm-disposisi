@@ -38,6 +38,7 @@ class DispositionService
 
             $disposition = Disposition::create([
                 'disposition_number' => $dispositionNumber,
+                'invoice_number' => !empty(trim((string)($data['invoice_number'] ?? ''))) ? trim((string)$data['invoice_number']) : null,
                 'disposition_date' => $data['disposition_date'],
                 'subject' => $data['subject'],
                 'applicant_id' => $user->id,
@@ -99,6 +100,7 @@ class DispositionService
             $disposition->ppn = $cleanPpn;
             $disposition->disposition_date = $data['disposition_date'];
             $disposition->subject = $data['subject'];
+            $disposition->invoice_number = !empty(trim((string)($data['invoice_number'] ?? ''))) ? trim((string)$data['invoice_number']) : null;
             $disposition->division_id = $data['division_id'] ?? $disposition->division_id;
             $disposition->description = $data['description'] ?? null;
 
@@ -171,12 +173,16 @@ class DispositionService
                 $calculatedTotal += $cleanAmount;
 
                 $desc = $item['description'] ?? ($item['item_name'] ?? '-');
-                $rawQty = $item['qty'] ?? ($item['quantity'] ?? 1);
-                $qty = (float) str_replace(['Rp', '.', ' ', ','], ['', '', '', '.'], (string)$rawQty);
-                if ($qty <= 0) {
-                    $qty = 1.0;
+                $rawQty = $item['qty'] ?? ($item['quantity'] ?? null);
+                $qty = null;
+                if (!is_null($rawQty) && trim((string)$rawQty) !== '') {
+                    $cleanQty = (float) str_replace(['Rp', '.', ' ', ','], ['', '', '', '.'], (string)$rawQty);
+                    if ($cleanQty > 0) {
+                        $qty = $cleanQty;
+                    }
                 }
-                $unit = !empty($item['unit']) ? trim((string)$item['unit']) : 'Pcs';
+                $unit = !empty(trim((string)($item['unit'] ?? ''))) ? trim((string)$item['unit']) : null;
+                $itemInv = !empty(trim((string)($item['invoice_number'] ?? ''))) ? trim((string)$item['invoice_number']) : null;
 
                 // File upload nota per item
                 $receiptPath = null;
@@ -194,6 +200,7 @@ class DispositionService
                     'disposition_id' => $disposition->id,
                     'category_id' => $item['category_id'] ?? null,
                     'description' => $desc,
+                    'invoice_number' => $itemInv,
                     'qty' => $qty,
                     'unit' => $unit,
                     'amount' => $cleanAmount,
