@@ -180,10 +180,17 @@
         <div>
             <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
                 <i data-lucide="shield-check" class="w-5 h-5 text-primary-600"></i>
-                Keputusan Persetujuan ({{ $stageName }})
+                Keputusan Persetujuan: {{ $stageName }}
             </h2>
             <p class="text-xs text-slate-500 mt-1">
-                Pilih putusan Anda terhadap pengajuan ini. Setiap keputusan akan tercatat dalam audit trail permanen.
+                @if($disposition->approval_status === \App\Models\Disposition::STATUS_WAITING_FINANCE)
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 font-semibold border border-amber-200">
+                        <i data-lucide="info" class="w-3.5 h-3.5 text-amber-600"></i>
+                        Penentuan status akhir ACC / TIDAK ACC dilakukan oleh Finance berdasarkan arahan / informasi langsung dari Owner.
+                    </span>
+                @else
+                    Pilih putusan Anda terhadap pengajuan ini. Setiap keputusan akan tercatat dalam riwayat audit trail.
+                @endif
             </p>
         </div>
 
@@ -192,7 +199,7 @@
 
             <!-- Radio Pilihan Keputusan -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <!-- 1. Setujui Penuh -->
+                <!-- 1. Setujui Penuh (ACC) -->
                 <label class="decision-card relative flex flex-col p-4 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-emerald-500 transition select-none bg-white">
                     <input type="radio" name="decision" value="approved" class="sr-only" checked onchange="handleDecisionChange(this)">
                     <div class="flex items-center justify-between mb-2">
@@ -203,8 +210,20 @@
                             <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
                         </span>
                     </div>
-                    <span class="text-xs font-bold text-slate-800">Setujui Penuh</span>
-                    <span class="text-[10px] text-slate-500 mt-0.5">Teruskan pengajuan ke tahap berikutnya.</span>
+                    <span class="text-xs font-bold text-slate-800">
+                        @if($disposition->approval_status === \App\Models\Disposition::STATUS_WAITING_FINANCE)
+                            ACC Disposisi (Sesuai Arahan Owner)
+                        @else
+                            ACC Disposisi (Setujui)
+                        @endif
+                    </span>
+                    <span class="text-[10px] text-slate-500 mt-0.5">
+                        @if($disposition->approval_status === \App\Models\Disposition::STATUS_WAITING_FINANCE)
+                            Tetapkan status akhir ACC untuk realisasi kas.
+                        @else
+                            Teruskan pengajuan ke tahap Finance.
+                        @endif
+                    </span>
                 </label>
 
                 <!-- 2. Setujui Sebagian -->
@@ -216,7 +235,7 @@
                         </div>
                         <span class="radio-indicator w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center"></span>
                     </div>
-                    <span class="text-xs font-bold text-slate-800">Setujui Sebagian</span>
+                    <span class="text-xs font-bold text-slate-800">ACC Sebagian</span>
                     <span class="text-[10px] text-slate-500 mt-0.5">Sesuaikan nominal yang disetujui.</span>
                 </label>
 
@@ -233,7 +252,7 @@
                     <span class="text-[10px] text-slate-500 mt-0.5">Kembalikan ke pemohon untuk diperbaiki.</span>
                 </label>
 
-                <!-- 4. Tolak Pengajuan -->
+                <!-- 4. Tolak Pengajuan (TIDAK ACC) -->
                 <label class="decision-card relative flex flex-col p-4 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-rose-500 transition select-none bg-white">
                     <input type="radio" name="decision" value="rejected" class="sr-only" onchange="handleDecisionChange(this)">
                     <div class="flex items-center justify-between mb-2">
@@ -242,8 +261,8 @@
                         </div>
                         <span class="radio-indicator w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center"></span>
                     </div>
-                    <span class="text-xs font-bold text-slate-800">Tolak Pengajuan</span>
-                    <span class="text-[10px] text-slate-500 mt-0.5">Batalkan pengajuan secara permanen.</span>
+                    <span class="text-xs font-bold text-slate-800">Tolak (TIDAK ACC)</span>
+                    <span class="text-[10px] text-slate-500 mt-0.5">Tolak pengajuan disposisi.</span>
                 </label>
             </div>
 

@@ -222,21 +222,29 @@ class DispositionController extends Controller
     }
 
     /**
-     * Hapus draft disposisi (hanya boleh jika berstatus draft).
+     * Hapus data disposisi.
+     * Admin/Finance dapat menghapus data disposisi.
+     * Pemohon hanya dapat menghapus draft miliknya sendiri.
+     * Manager tidak memiliki akses hapus.
      */
     public function destroy(Disposition $disposition): RedirectResponse
     {
-        if ($disposition->applicant_id !== Auth::id() || $disposition->approval_status !== Disposition::STATUS_DRAFT) {
-            return back()->with('error', 'Hanya pengajuan berstatus draft yang dapat dihapus.');
+        $user = Auth::user();
+
+        if (!$disposition->canBeDeletedBy($user)) {
+            return back()->with('error', 'Anda tidak memiliki hak akses untuk menghapus data disposisi ini.');
         }
 
         $subject = $disposition->subject;
+        $num = $disposition->disposition_number ?: 'Draft #' . $disposition->id;
+        $old = $disposition->toArray();
+
         $disposition->delete();
 
-        AuditLog::record('disposition_draft_deleted', null, ['subject' => $subject], []);
+        AuditLog::record('disposition_deleted', null, $old, []);
 
         return redirect()->route('dispositions.index')
-            ->with('success', "Draft disposisi '{$subject}' berhasil dihapus.");
+            ->with('success', "Disposisi '{$num} - {$subject}' berhasil dihapus.");
     }
 }
 

@@ -49,7 +49,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/{disposition}/submit', [DispositionController::class, 'submit'])->name('submit');
         Route::delete('/{disposition}', [DispositionController::class, 'destroy'])->name('destroy');
 
-        // Dokumen & Cetak (Tahap 6)
+        // Dokumen & Cetak (Format JPG / Gambar untuk WhatsApp & Cetak)
+        Route::get('/{disposition}/image', [DispositionDocumentController::class, 'image'])->name('image');
         Route::get('/{disposition}/pdf', [DispositionDocumentController::class, 'pdf'])->name('pdf');
         Route::get('/{disposition}/print', [DispositionDocumentController::class, 'print'])->name('print');
     });

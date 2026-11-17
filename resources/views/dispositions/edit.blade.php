@@ -125,13 +125,16 @@
             </div>
         </div>
 
-        <!-- 2. Rincian Item Pengeluaran -->
+        <!-- 2. Rincian Item Pengeluaran (Uraian Kebutuhan, Qty, Satuan, Subtotal, Upload Nota) -->
         <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="list" class="w-4 h-4 text-primary-600"></i>
-                    2. Rincian Item Pengeluaran <span class="text-rose-500">*</span>
-                </h2>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="list" class="w-4 h-4 text-primary-600"></i>
+                        2. Rincian Item Pengeluaran <span class="text-rose-500">*</span>
+                    </h2>
+                    <p class="text-[11px] text-slate-500">Uraian kebutuhan langsung tanpa kategori, Qty, Satuan, Subtotal per kebutuhan, dan nota per item.</p>
+                </div>
                 <button type="button" onclick="addItemRow()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 text-xs font-semibold transition">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                     <span>Tambah Baris Item</span>
@@ -142,14 +145,13 @@
                 <table class="w-full text-left border-collapse" id="items-table">
                     <thead>
                         <tr class="border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                            <th class="py-2.5 pr-2 w-10 text-center">#</th>
-                            <th class="py-2.5 px-2 min-w-[200px]">Deskripsi Item <span class="text-rose-500">*</span></th>
-                            <th class="py-2.5 px-2 min-w-[140px]">Kategori</th>
-                            <th class="py-2.5 px-2 w-24">Jumlah</th>
-                            <th class="py-2.5 px-2 w-24">Satuan</th>
-                            <th class="py-2.5 px-2 min-w-[140px]">Harga Satuan (Rp)</th>
-                            <th class="py-2.5 px-2 min-w-[140px] text-right">Subtotal (Rp)</th>
-                            <th class="py-2.5 pl-2 w-12 text-center">Aksi</th>
+                            <th class="py-2.5 pr-2 w-8 text-center">#</th>
+                            <th class="py-2.5 px-2 min-w-[200px]">Uraian Kebutuhan <span class="text-rose-500">*</span></th>
+                            <th class="py-2.5 px-2 w-20 text-right">Qty <span class="text-rose-500">*</span></th>
+                            <th class="py-2.5 px-2 w-24 text-center">Satuan <span class="text-rose-500">*</span></th>
+                            <th class="py-2.5 px-2 min-w-[140px] text-right">Subtotal (Rp) <span class="text-rose-500">*</span></th>
+                            <th class="py-2.5 px-2 min-w-[180px]">Nota / Bukti Pengeluaran</th>
+                            <th class="py-2.5 pl-2 w-10 text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="items-body" class="divide-y divide-slate-100 text-xs">
@@ -158,72 +160,73 @@
                         @endphp
                         @foreach ($itemsData as $idx => $item)
                             <tr class="item-row group hover:bg-slate-50/50 transition" data-index="{{ $idx }}">
-                                <td class="py-2.5 pr-2 text-center text-slate-400 font-semibold row-number">{{ $idx + 1 }}</td>
-                                <td class="py-2 px-2">
+                                <td class="py-2.5 pr-2 text-center text-slate-400 font-semibold row-number align-middle">{{ $idx + 1 }}</td>
+                                <td class="py-2 px-2 align-top">
                                     <input 
                                         type="text" 
-                                        name="items[{{ $idx }}][item_name]" 
-                                        value="{{ $item['item_name'] ?? '' }}" 
+                                        name="items[{{ $idx }}][description]" 
+                                        value="{{ $item['description'] ?? ($item['item_name'] ?? '') }}" 
                                         required 
-                                        placeholder="Nama barang / jasa"
-                                        class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                        placeholder="Contoh: Pembelian Oli, Sparepart, ATK..."
+                                        class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium"
                                     >
                                 </td>
-                                <td class="py-2 px-2">
-                                    <select name="items[{{ $idx }}][category_id]" class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white">
-                                        <option value="">-- Umum --</option>
-                                        @foreach ($categories as $cat)
-                                            <option value="{{ $cat->id }}" {{ ($item['category_id'] ?? '') == $cat->id ? 'selected' : '' }}>
-                                                {{ $cat->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </td>
-                                <td class="py-2 px-2">
+                                <td class="py-2 px-2 align-top">
                                     <input 
                                         type="number" 
-                                        step="0.01" 
+                                        step="any" 
                                         min="0.01" 
-                                        name="items[{{ $idx }}][quantity]" 
-                                        value="{{ $item['quantity'] ?? 1 }}" 
+                                        name="items[{{ $idx }}][qty]" 
+                                        value="{{ $item['qty'] ?? ($item['quantity'] ?? 1) }}" 
                                         required 
-                                        oninput="calculateItemTotal(this)" 
-                                        class="item-qty w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                        class="item-qty w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     >
                                 </td>
-                                <td class="py-2 px-2">
+                                <td class="py-2 px-2 align-top">
                                     <input 
                                         type="text" 
                                         name="items[{{ $idx }}][unit]" 
-                                        value="{{ $item['unit'] ?? 'Unit' }}" 
-                                        placeholder="Liter/Pcs"
-                                        class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                        value="{{ $item['unit'] ?? 'Pcs' }}" 
+                                        placeholder="Pcs, unit, liter..." 
+                                        required
+                                        class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     >
                                 </td>
-                                <td class="py-2 px-2">
+                                <td class="py-2 px-2 align-top">
                                     <input 
                                         type="number" 
-                                        step="0.01" 
+                                        step="any" 
                                         min="0" 
-                                        name="items[{{ $idx }}][unit_price]" 
-                                        value="{{ $item['unit_price'] ?? 0 }}" 
-                                        required 
-                                        oninput="calculateItemTotal(this)" 
-                                        class="item-price w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
-                                    >
-                                </td>
-                                <td class="py-2 px-2 text-right">
-                                    <input 
-                                        type="hidden" 
                                         name="items[{{ $idx }}][amount]" 
-                                        value="{{ $item['amount'] ?? 0 }}" 
-                                        class="item-subtotal-raw"
+                                        value="{{ (float) ($item['amount'] ?? 0) }}" 
+                                        required 
+                                        oninput="updateGrandTotal()" 
+                                        class="item-amount w-full px-2.5 py-1.5 text-xs text-right rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono font-semibold"
                                     >
-                                    <span class="item-subtotal-formatted font-mono font-bold text-slate-700">
-                                        Rp {{ number_format((float) ($item['amount'] ?? 0), 2, ',', '.') }}
-                                    </span>
                                 </td>
-                                <td class="py-2 pl-2 text-center">
+                                <td class="py-2 px-2 align-top">
+                                    <div class="space-y-1">
+                                        @if(!empty($item['receipt_path']))
+                                            <div class="flex items-center gap-1.5 mb-1 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                                <i data-lucide="receipt" class="w-3 h-3 flex-shrink-0"></i>
+                                                <a href="{{ asset('storage/' . $item['receipt_path']) }}" target="_blank" class="truncate font-semibold hover:underline" title="{{ $item['receipt_name'] }}">
+                                                    {{ $item['receipt_name'] ?: 'Nota Terunggah' }}
+                                                </a>
+                                            </div>
+                                            <input type="hidden" name="items[{{ $idx }}][existing_receipt_path]" value="{{ $item['receipt_path'] }}">
+                                            <input type="hidden" name="items[{{ $idx }}][existing_receipt_name]" value="{{ $item['receipt_name'] ?? '' }}">
+                                        @endif
+                                        <input 
+                                            type="file" 
+                                            name="items[{{ $idx }}][receipt]" 
+                                            accept=".pdf,.jpg,.jpeg,.png" 
+                                            onchange="previewItemFile(this)"
+                                            class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded"
+                                        >
+                                        <span class="file-chosen-name text-[10px] text-emerald-600 font-semibold block truncate hidden"></span>
+                                    </div>
+                                </td>
+                                <td class="py-2 pl-2 text-center align-middle">
                                     <button type="button" onclick="removeItemRow(this)" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition" title="Hapus Baris">
                                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     </button>
@@ -235,12 +238,34 @@
             </div>
 
             <!-- Total Pengajuan Ringkasan -->
-            <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <div class="text-xs text-slate-500">
-                    Total dihitung otomatis berdasarkan jumlah dikali harga satuan.
+            <div class="pt-4 border-t border-slate-100 space-y-2">
+                <div class="flex items-center justify-between text-xs text-slate-600">
+                    <span>Subtotal Rincian Kebutuhan:</span>
+                    <span id="subtotal-items-display" class="font-mono font-bold text-slate-800">
+                        Rp {{ number_format((float) $disposition->items->sum('amount'), 2, ',', '.') }}
+                    </span>
                 </div>
-                <div class="text-right">
-                    <span class="text-xs uppercase font-bold text-slate-500 mr-3">Total Pengajuan:</span>
+                <div class="flex items-center justify-between text-xs text-slate-600">
+                    <span class="flex items-center gap-1.5">
+                        <span>PPN (Opsional, Boleh Kosong):</span>
+                        <span class="text-[10px] text-slate-400 italic">Diisi bila ada PPN</span>
+                    </span>
+                    <div class="w-44">
+                        <input 
+                            type="number" 
+                            step="any" 
+                            min="0" 
+                            name="ppn" 
+                            id="input-ppn" 
+                            value="{{ old('ppn', (float)($disposition->ppn ?? 0)) }}" 
+                            placeholder="0" 
+                            oninput="updateGrandTotal()" 
+                            class="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-right font-mono font-semibold"
+                        >
+                    </div>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-slate-200 text-slate-800">
+                    <span class="text-xs uppercase font-extrabold text-blue-900">Total Pengajuan Disposisi:</span>
                     <span id="grand-total-display" class="text-lg font-extrabold text-primary-700 font-mono">
                         Rp {{ number_format((float) $disposition->requested_total, 2, ',', '.') }}
                     </span>
@@ -601,24 +626,31 @@
     let itemIndex = {{ count($itemsData) }};
     let recipientIndex = {{ count($recipientsData) }};
 
-    function calculateItemTotal(input) {
-        const row = input.closest('.item-row');
-        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-        const price = parseFloat(row.querySelector('.item-price').value) || 0;
-        const subtotal = qty * price;
-
-        row.querySelector('.item-subtotal-raw').value = subtotal.toFixed(2);
-        row.querySelector('.item-subtotal-formatted').innerText = 'Rp ' + subtotal.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-        updateGrandTotal();
+    function previewItemFile(input) {
+        const parent = input.parentElement;
+        const label = parent.querySelector('.file-chosen-name');
+        if (input.files && input.files[0]) {
+            label.innerText = '✓ ' + input.files[0].name;
+            label.classList.remove('hidden');
+        } else {
+            label.classList.add('hidden');
+        }
     }
 
     function updateGrandTotal() {
-        let total = 0;
-        document.querySelectorAll('.item-subtotal-raw').forEach(input => {
-            total += parseFloat(input.value) || 0;
+        let subtotal = 0;
+        document.querySelectorAll('.item-amount').forEach(input => {
+            subtotal += parseFloat(input.value) || 0;
         });
-        document.getElementById('grand-total-display').innerText = 'Rp ' + total.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const ppnInput = document.getElementById('input-ppn');
+        const ppn = parseFloat(ppnInput ? ppnInput.value : 0) || 0;
+        const grandTotal = subtotal + ppn;
+
+        const subDisplay = document.getElementById('subtotal-items-display');
+        if (subDisplay) {
+            subDisplay.innerText = 'Rp ' + Math.round(subtotal).toLocaleString('id-ID');
+        }
+        document.getElementById('grand-total-display').innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
     }
 
     function addItemRow() {
@@ -628,32 +660,62 @@
         tr.dataset.index = itemIndex;
 
         tr.innerHTML = `
-            <td class="py-2.5 pr-2 text-center text-slate-400 font-semibold row-number">${body.children.length + 1}</td>
-            <td class="py-2 px-2">
-                <input type="text" name="items[${itemIndex}][item_name]" required placeholder="Nama barang / jasa" class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500">
+            <td class="py-2.5 pr-2 text-center text-slate-400 font-semibold row-number align-middle">${body.children.length + 1}</td>
+            <td class="py-2 px-2 align-top">
+                <input 
+                    type="text" 
+                    name="items[${itemIndex}][description]" 
+                    required 
+                    placeholder="Contoh: Pembelian Oli, Sparepart, ATK..."
+                    class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium"
+                >
             </td>
-            <td class="py-2 px-2">
-                <select name="items[${itemIndex}][category_id]" class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white">
-                    <option value="">-- Umum --</option>
-                    @foreach ($categories as $cat)
-                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                    @endforeach
-                </select>
+            <td class="py-2 px-2 align-top">
+                <input 
+                    type="number" 
+                    step="any" 
+                    min="0.01" 
+                    name="items[${itemIndex}][qty]" 
+                    value="1" 
+                    required 
+                    class="item-qty w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
             </td>
-            <td class="py-2 px-2">
-                <input type="number" step="0.01" min="0.01" name="items[${itemIndex}][quantity]" value="1" required oninput="calculateItemTotal(this)" class="item-qty w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500">
+            <td class="py-2 px-2 align-top">
+                <input 
+                    type="text" 
+                    name="items[${itemIndex}][unit]" 
+                    value="Pcs" 
+                    placeholder="Pcs, unit, liter..." 
+                    required
+                    class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
             </td>
-            <td class="py-2 px-2">
-                <input type="text" name="items[${itemIndex}][unit]" value="Unit" placeholder="Liter/Pcs" class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500">
+            <td class="py-2 px-2 align-top">
+                <input 
+                    type="number" 
+                    step="any" 
+                    min="0" 
+                    name="items[${itemIndex}][amount]" 
+                    value="0" 
+                    required 
+                    oninput="updateGrandTotal()" 
+                    class="item-amount w-full px-2.5 py-1.5 text-xs text-right rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono font-semibold"
+                >
             </td>
-            <td class="py-2 px-2">
-                <input type="number" step="0.01" min="0" name="items[${itemIndex}][unit_price]" value="0" required oninput="calculateItemTotal(this)" class="item-price w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono">
+            <td class="py-2 px-2 align-top">
+                <div class="space-y-1">
+                    <input 
+                        type="file" 
+                        name="items[${itemIndex}][receipt]" 
+                        accept=".pdf,.jpg,.jpeg,.png" 
+                        onchange="previewItemFile(this)"
+                        class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded"
+                    >
+                    <span class="file-chosen-name text-[10px] text-emerald-600 font-semibold block truncate hidden"></span>
+                </div>
             </td>
-            <td class="py-2 px-2 text-right">
-                <input type="hidden" name="items[${itemIndex}][amount]" value="0" class="item-subtotal-raw">
-                <span class="item-subtotal-formatted font-mono font-bold text-slate-700">Rp 0,00</span>
-            </td>
-            <td class="py-2 pl-2 text-center">
+            <td class="py-2 pl-2 text-center align-middle">
                 <button type="button" onclick="removeItemRow(this)" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition" title="Hapus Baris">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
@@ -663,6 +725,7 @@
         body.appendChild(tr);
         itemIndex++;
         renumberRows();
+        updateGrandTotal();
         if (window.refreshLucideIcons) window.refreshLucideIcons();
     }
 

@@ -14,11 +14,16 @@ class DispositionItem extends Model
         'disposition_id',
         'category_id',
         'description',
+        'qty',
+        'unit',
         'amount',
+        'receipt_path',
+        'receipt_name',
         'notes',
     ];
 
     protected $casts = [
+        'qty' => 'decimal:2',
         'amount' => 'decimal:2',
     ];
 
@@ -29,17 +34,26 @@ class DispositionItem extends Model
 
     public function getQuantityAttribute(): float
     {
-        return 1.0;
+        return (float) ($this->qty ?? 1.0);
     }
 
     public function getUnitAttribute(): string
     {
-        return 'Unit';
+        return $this->attributes['unit'] ?? 'Pcs';
     }
 
     public function getUnitPriceAttribute(): float
     {
+        $quantity = (float) ($this->qty ?? 1.0);
+        if ($quantity > 0) {
+            return round((float) ($this->amount ?? 0) / $quantity, 2);
+        }
         return (float) ($this->amount ?? 0);
+    }
+
+    public function getReceiptUrlAttribute(): ?string
+    {
+        return $this->receipt_path ? asset('storage/' . $this->receipt_path) : null;
     }
 
     public function disposition(): BelongsTo

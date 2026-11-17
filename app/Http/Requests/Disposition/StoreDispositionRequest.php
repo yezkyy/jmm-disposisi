@@ -18,17 +18,22 @@ class StoreDispositionRequest extends FormRequest
             'subject' => ['required', 'string', 'max:255'],
             'division_id' => ['nullable', 'exists:divisions,id'],
             'description' => ['nullable', 'string'],
+            'ppn' => ['nullable'],
             'action' => ['required', 'in:draft,submit'],
 
-            // Rincian Pengeluaran (Multi-item)
+            // Rincian Pengeluaran (Multi-item: Uraian, Qty, Satuan, Subtotal, Nota)
             'items' => ['required', 'array', 'min:1'],
-            'items.*.category_id' => ['nullable', 'exists:categories,id'],
+            'items.*.category_id' => ['nullable'],
             'items.*.item_name' => ['nullable', 'string', 'max:255'],
             'items.*.description' => ['nullable', 'string'],
+            'items.*.qty' => ['nullable'],
             'items.*.quantity' => ['nullable'],
-            'items.*.unit' => ['nullable', 'string'],
+            'items.*.unit' => ['nullable', 'string', 'max:50'],
             'items.*.unit_price' => ['nullable'],
             'items.*.amount' => ['required'],
+            'items.*.subtotal' => ['nullable'],
+            'items.*.receipt' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],
+            'items.*.notes' => ['nullable', 'string'],
 
             // Penerima (Multi-recipient)
             'recipients' => ['required', 'array', 'min:1'],

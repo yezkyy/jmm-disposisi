@@ -34,6 +34,8 @@ class DispositionService
                 $submittedAt = now();
             }
 
+            $cleanPpn = (float) str_replace(['Rp', '.', ' ', ','], ['', '', '', '.'], (string)($data['ppn'] ?? 0));
+
             $disposition = Disposition::create([
                 'disposition_number' => $dispositionNumber,
                 'disposition_date' => $data['disposition_date'],
@@ -43,13 +45,14 @@ class DispositionService
                 'description' => $data['description'] ?? null,
                 'approval_status' => $status,
                 'payment_status' => Disposition::PAYMENT_UNPAID,
-                'requested_total' => 0, // Akan dihitung dari items
+                'requested_total' => 0, // Akan dihitung dari items + PPN
+                'ppn' => $cleanPpn,
                 'submitted_at' => $submittedAt,
             ]);
 
-            $total = $this->syncItemsAndRecipients($disposition, $data);
+            $itemsTotal = $this->syncItemsAndRecipients($disposition, $data);
 
-            $disposition->requested_total = $total;
+            $disposition->requested_total = $itemsTotal + $cleanPpn;
             $disposition->save();
 
             // Simpan lampiran bila ada
@@ -92,6 +95,8 @@ class DispositionService
                 $disposition->submitted_at = now();
             }
 
+            $cleanPpn = (float) str_replace(['Rp', '.', ' ', ','], ['', '', '', '.'], (string)($data['ppn'] ?? ($disposition->ppn ?? 0)));
+            $disposition->ppn = $cleanPpn;
             $disposition->disposition_date = $data['disposition_date'];
             $disposition->subject = $data['subject'];
             $disposition->division_id = $data['division_id'] ?? $disposition->division_id;
@@ -103,7 +108,7 @@ class DispositionService
 
             $total = $this->syncItemsAndRecipients($disposition, $data);
 
-            $disposition->requested_total = $total;
+            $disposition->requested_total = $total + $cleanPpn;
             $disposition->save();
 
             // Simpan lampiran tambahan bila ada
@@ -158,22 +163,42 @@ class DispositionService
     {
         $calculatedTotal = 0.0;
 
-        // 1. Simpan Items
+        // 1. Simpan Items (Uraian Kebutuhan, Qty, Satuan, Subtotal, dan Nota per item)
         if (!empty($data['items']) && is_array($data['items'])) {
             foreach ($data['items'] as $item) {
-                $cleanAmount = (float) str_replace(['Rp', '.', ' ', ','], ['', '', '', '.'], (string)($item['amount'] ?? 0));
+                $rawAmount = $item['amount'] ?? ($item['subtotal'] ?? 0);
+                $cleanAmount = (float) str_replace(['Rp', '.', ' ', ','], ['', '', '', '.'], (string)$rawAmount);
                 $calculatedTotal += $cleanAmount;
 
                 $desc = $item['description'] ?? ($item['item_name'] ?? '-');
-                if (!empty($item['quantity']) && !empty($item['unit_price']) && empty($item['description'])) {
-                    $desc = ($item['item_name'] ?? 'Item') . ' (' . $item['quantity'] . ' ' . ($item['unit'] ?? 'Unit') . ' @ ' . number_format((float)$item['unit_price'], 0, ',', '.') . ')';
+                $rawQty = $item['qty'] ?? ($item['quantity'] ?? 1);
+                $qty = (float) str_replace(['Rp', '.', ' ', ','], ['', '', '', '.'], (string)$rawQty);
+                if ($qty <= 0) {
+                    $qty = 1.0;
+                }
+                $unit = !empty($item['unit']) ? trim((string)$item['unit']) : 'Pcs';
+
+                // File upload nota per item
+                $receiptPath = null;
+                $receiptName = null;
+
+                if (!empty($item['receipt']) && $item['receipt'] instanceof UploadedFile) {
+                    $receiptPath = $item['receipt']->store('receipts/disposition-items', 'public');
+                    $receiptName = $item['receipt']->getClientOriginalName();
+                } elseif (!empty($item['existing_receipt_path'])) {
+                    $receiptPath = $item['existing_receipt_path'];
+                    $receiptName = $item['existing_receipt_name'] ?? basename($receiptPath);
                 }
 
                 DispositionItem::create([
                     'disposition_id' => $disposition->id,
-                    'category_id' => $item['category_id'] ?? Category::active()->first()?->id,
+                    'category_id' => $item['category_id'] ?? null,
                     'description' => $desc,
+                    'qty' => $qty,
+                    'unit' => $unit,
                     'amount' => $cleanAmount,
+                    'receipt_path' => $receiptPath,
+                    'receipt_name' => $receiptName,
                     'notes' => $item['notes'] ?? null,
                 ]);
             }

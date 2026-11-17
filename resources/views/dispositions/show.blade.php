@@ -43,15 +43,23 @@
                 <span>Daftar</span>
             </a>
 
+            <!-- Tombol Format Gambar (JPG) untuk WhatsApp ke Owner (Sesuai Kebutuhan) -->
+            @if(Route::has('dispositions.image'))
+                <a href="{{ route('dispositions.image', $disposition) }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-sm">
+                    <i data-lucide="image" class="w-4 h-4"></i>
+                    <span>Cetak / Unduh Disposisi (JPG)</span>
+                </a>
+            @endif
+
             <!-- Tombol Cetak / PDF -->
             @if(Route::has('dispositions.pdf'))
                 <a href="{{ route('dispositions.pdf', $disposition) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition shadow-sm">
                     <i data-lucide="file-text" class="w-4 h-4 text-rose-600"></i>
-                    <span>Cetak PDF</span>
+                    <span>PDF</span>
                 </a>
             @endif
 
-            <!-- Tombol Edit jika canBeEditedBy -->
+            <!-- Tombol Edit jika canBeEditedBy (Admin/Finance full access, Pemohon jika draft/revisi) -->
             @if($disposition->canBeEditedBy(auth()->user()))
                 <a href="{{ route('dispositions.edit', $disposition) }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition shadow-sm">
                     <i data-lucide="edit-3" class="w-4 h-4"></i>
@@ -68,13 +76,16 @@
                         <span>Kirim ke Approval</span>
                     </button>
                 </form>
+            @endif
 
+            <!-- Tombol Hapus jika diizinkan (Admin/Finance atau Pemohon jika draft) -->
+            @if($disposition->canBeDeletedBy(auth()->user()))
                 <form method="POST" action="{{ route('dispositions.destroy', $disposition) }}" onsubmit="return confirmDelete(event)">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        <span>Hapus</span>
+                        <span>Hapus Disposisi</span>
                     </button>
                 </form>
             @endif
@@ -85,7 +96,7 @@
                 $canReview = false;
                 if ($user->isManager() && $disposition->approval_status === 'waiting_manager' && $disposition->applicant_id !== $user->id) {
                     $canReview = true;
-                } elseif ($user->isAdminFinance() && $disposition->approval_status === 'waiting_finance' && $disposition->applicant_id !== $user->id) {
+                } elseif (($user->isAdminFinance() || $user->isOwner()) && $disposition->approval_status === 'waiting_finance' && $disposition->applicant_id !== $user->id) {
                     $canReview = true;
                 } elseif ($user->isOwner() && $disposition->approval_status === 'waiting_owner' && $disposition->applicant_id !== $user->id) {
                     $canReview = true;
@@ -247,37 +258,57 @@
                     <thead>
                         <tr class="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                             <th class="py-2.5 pr-2 w-8 text-center">#</th>
-                            <th class="py-2.5 px-2">Nama Barang / Jasa</th>
-                            <th class="py-2.5 px-2">Kategori</th>
+                            <th class="py-2.5 px-2">Uraian Kebutuhan</th>
                             <th class="py-2.5 px-2 text-right">Qty</th>
-                            <th class="py-2.5 px-2">Satuan</th>
-                            <th class="py-2.5 px-2 text-right">Harga Satuan</th>
-                            <th class="py-2.5 pl-2 text-right">Subtotal</th>
+                            <th class="py-2.5 px-2 text-center">Satuan</th>
+                            <th class="py-2.5 px-2 text-right">Subtotal</th>
+                            <th class="py-2.5 pl-2 text-center">Nota / Bukti</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-xs">
                         @foreach ($disposition->items as $idx => $item)
                             <tr class="hover:bg-slate-50/50 transition">
                                 <td class="py-3 pr-2 text-center text-slate-400 font-semibold">{{ $idx + 1 }}</td>
-                                <td class="py-3 px-2 font-medium text-slate-800">{{ $item->item_name }}</td>
-                                <td class="py-3 px-2">
-                                    <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">
-                                        {{ $item->category?->name ?? 'Umum' }}
-                                    </span>
+                                <td class="py-3 px-2 font-semibold text-slate-800">{{ $item->description }}</td>
+                                <td class="py-3 px-2 text-right font-mono">{{ rtrim(rtrim(number_format((float) ($item->qty ?? 1), 2, ',', '.'), '0'), ',') }}</td>
+                                <td class="py-3 px-2 text-center text-slate-500">{{ $item->unit ?? 'Pcs' }}</td>
+                                <td class="py-3 px-2 text-right font-mono font-bold text-slate-800">Rp {{ number_format((float) $item->amount, 2, ',', '.') }}</td>
+                                <td class="py-3 pl-2 text-center">
+                                    @if($item->receipt_path)
+                                        <a href="{{ asset('storage/' . $item->receipt_path) }}" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-[11px] border border-emerald-200 transition" title="Lihat Nota: {{ $item->receipt_name }}">
+                                            <i data-lucide="receipt" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                            <span class="truncate max-w-[110px]">{{ $item->receipt_name ?: 'Buka Nota' }}</span>
+                                        </a>
+                                    @else
+                                        <span class="text-slate-400 text-[11px] italic">Tanpa Nota</span>
+                                    @endif
                                 </td>
-                                <td class="py-3 px-2 text-right font-mono">{{ number_format($item->quantity, 2, ',', '.') }}</td>
-                                <td class="py-3 px-2 text-slate-500">{{ $item->unit }}</td>
-                                <td class="py-3 px-2 text-right font-mono text-slate-600">Rp {{ number_format($item->unit_price, 2, ',', '.') }}</td>
-                                <td class="py-3 pl-2 text-right font-mono font-bold text-slate-800">Rp {{ number_format($item->amount, 2, ',', '.') }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
-                        <tr class="border-t-2 border-slate-200 font-bold text-xs bg-slate-50/50">
-                            <td colspan="6" class="py-3 px-2 text-right uppercase tracking-wider text-slate-600">Total Pengajuan:</td>
-                            <td class="py-3 pl-2 text-right font-mono text-primary-700 text-sm">
+                        @if ((float) $disposition->ppn > 0)
+                            <tr class="border-t border-slate-100 font-bold text-xs bg-slate-50/30">
+                                <td colspan="4" class="py-2 px-2 text-right uppercase tracking-wider text-slate-500 text-[10px]">Subtotal Rincian:</td>
+                                <td class="py-2 px-2 text-right font-mono text-slate-700">
+                                    Rp {{ number_format($disposition->items->sum('amount'), 2, ',', '.') }}
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr class="border-t border-slate-100 font-bold text-xs bg-slate-50/30">
+                                <td colspan="4" class="py-2 px-2 text-right uppercase tracking-wider text-slate-500 text-[10px]">PPN:</td>
+                                <td class="py-2 px-2 text-right font-mono text-slate-700">
+                                    Rp {{ number_format((float) $disposition->ppn, 2, ',', '.') }}
+                                </td>
+                                <td></td>
+                            </tr>
+                        @endif
+                        <tr class="border-t-2 border-slate-200 font-bold text-xs bg-slate-50/70">
+                            <td colspan="4" class="py-3 px-2 text-right uppercase tracking-wider text-slate-700">Total Pengajuan:</td>
+                            <td class="py-3 px-2 text-right font-mono text-primary-700 text-sm font-extrabold">
                                 Rp {{ number_format($disposition->requested_total, 2, ',', '.') }}
                             </td>
+                            <td></td>
                         </tr>
                     </tfoot>
                 </table>

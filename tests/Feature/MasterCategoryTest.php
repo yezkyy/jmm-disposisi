@@ -86,5 +86,22 @@ class MasterCategoryTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertFalse((bool) $category->fresh()->is_active);
     }
+
+    public function test_admin_can_delete_category(): void
+    {
+        $category = Category::create([
+            'name' => 'Kategori Tidak Digunakan',
+            'code' => 'DEL_TEST',
+            'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($this->admin)->delete(route('master.categories.destroy', $category));
+
+        $response->assertRedirect(route('master.categories.index'));
+        $response->assertSessionHas('success');
+        $this->assertDatabaseMissing('categories', [
+            'id' => $category->id,
+        ]);
+    }
 }
 

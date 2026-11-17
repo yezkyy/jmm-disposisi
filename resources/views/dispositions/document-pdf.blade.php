@@ -138,7 +138,7 @@
             margin-top: 15px;
         }
         .signatures-table td {
-            width: 25%;
+            width: 33.33%;
             border: 1px solid #cbd5e1;
             padding: 6px;
             text-align: center;
@@ -228,35 +228,51 @@
         <thead>
             <tr>
                 <th style="width: 5%;" class="text-center">No</th>
-                <th style="width: 45%;">Deskripsi / Nama Barang & Jasa</th>
-                <th style="width: 15%;">Kategori</th>
-                <th style="width: 15%;" class="text-right">Harga Satuan</th>
+                <th style="width: 50%;">Uraian Kebutuhan</th>
+                <th style="width: 12%;" class="text-right">Qty</th>
+                <th style="width: 13%;" class="text-center">Satuan</th>
                 <th style="width: 20%;" class="text-right">Subtotal</th>
             </tr>
         </thead>
         <tbody>
+            @php $subtotalItems = 0; @endphp
             @foreach ($disposition->items as $idx => $item)
+                @php $subtotalItems += (float) $item->amount; @endphp
                 <tr>
                     <td class="text-center">{{ $idx + 1 }}</td>
-                    <td>{{ $item->item_name }}</td>
-                    <td>{{ $item->category?->name ?? 'Umum' }}</td>
-                    <td class="text-right font-mono">Rp {{ number_format($item->unit_price, 2, ',', '.') }}</td>
-                    <td class="text-right font-mono font-bold">Rp {{ number_format($item->amount, 2, ',', '.') }}</td>
+                    <td><strong>{{ $item->description }}</strong></td>
+                    <td class="text-right font-mono">{{ rtrim(rtrim(number_format((float) ($item->qty ?? 1), 2, ',', '.'), '0'), ',') }}</td>
+                    <td class="text-center">{{ $item->unit ?? 'Pcs' }}</td>
+                    <td class="text-right font-mono font-bold">Rp {{ number_format((float) $item->amount, 2, ',', '.') }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr style="background-color: #f8fafc; font-weight: bold;">
-                <td colspan="4" class="text-right" style="padding: 5px 6px; text-transform: uppercase;">Total Nominal Pengajuan:</td>
-                <td class="text-right font-mono font-bold" style="padding: 5px 6px; color: #026ec4;">
-                    Rp {{ number_format($disposition->requested_total, 2, ',', '.') }}
+                <td colspan="4" class="text-right" style="padding: 5px 6px; text-transform: uppercase;">Subtotal Rincian Kebutuhan:</td>
+                <td class="text-right font-mono font-bold" style="padding: 5px 6px;">
+                    Rp {{ number_format($subtotalItems, 2, ',', '.') }}
                 </td>
             </tr>
-            @if ($disposition->final_approved_total && $disposition->final_approved_total != $disposition->requested_total)
+            @if ((float) $disposition->ppn > 0)
+                <tr style="background-color: #f8fafc; font-weight: bold;">
+                    <td colspan="4" class="text-right" style="padding: 5px 6px; text-transform: uppercase;">PPN:</td>
+                    <td class="text-right font-mono font-bold" style="padding: 5px 6px;">
+                        Rp {{ number_format((float) $disposition->ppn, 2, ',', '.') }}
+                    </td>
+                </tr>
+            @endif
+            <tr style="background-color: #f0f9ff; font-weight: bold;">
+                <td colspan="4" class="text-right" style="padding: 5px 6px; text-transform: uppercase; color: #026ec4;">Total Nominal Pengajuan:</td>
+                <td class="text-right font-mono font-bold" style="padding: 5px 6px; color: #026ec4;">
+                    Rp {{ number_format((float) $disposition->requested_total, 2, ',', '.') }}
+                </td>
+            </tr>
+            @if ($disposition->final_approved_total && (float)$disposition->final_approved_total != (float)$disposition->requested_total)
                 <tr style="background-color: #f0fdf4; font-weight: bold;">
-                    <td colspan="4" class="text-right" style="padding: 5px 6px; text-transform: uppercase; color: #166534;">Total Nominal Disetujui:</td>
+                    <td colspan="4" class="text-right" style="padding: 5px 6px; text-transform: uppercase; color: #166534;">Total Nominal Disetujui (ACC Akhir):</td>
                     <td class="text-right font-mono font-bold" style="padding: 5px 6px; color: #166534;">
-                        Rp {{ number_format($disposition->final_approved_total, 2, ',', '.') }}
+                        Rp {{ number_format((float) $disposition->final_approved_total, 2, ',', '.') }}
                     </td>
                 </tr>
             @endif
@@ -308,39 +324,32 @@
         </tbody>
     </table>
 
-    <!-- 3. Kolom Tanda Tangan Alur Persetujuan (4 Kolom) -->
-    <div class="section-header">3. Otorisasi & Persetujuan Berjenjang</div>
+    <!-- 3. Kolom Tanda Tangan Alur Persetujuan (2 Tahap) -->
+    <div class="section-header">3. Otorisasi & Persetujuan (2 Tahap)</div>
     @php
         $mgrAppr = $disposition->approvals->where('stage', 'manager')->first();
         $finAppr = $disposition->approvals->where('stage', 'finance')->first();
-        $ownAppr = $disposition->approvals->where('stage', 'owner')->first();
     @endphp
 
     <table class="signatures-table">
         <tr>
             <td>
-                <div class="sig-role">Diajukan Oleh:</div>
+                <div class="sig-role">1. Diajukan Oleh:</div>
                 <div class="sig-space"></div>
                 <div class="sig-name">{{ $disposition->applicant?->name ?? 'Pemohon' }}</div>
                 <div class="sig-date">{{ $disposition->disposition_date ? $disposition->disposition_date->format('d/m/Y') : '' }}</div>
             </td>
             <td>
-                <div class="sig-role">Diverifikasi:</div>
+                <div class="sig-role">2. Disetujui (ACC Manager):</div>
                 <div class="sig-space"></div>
                 <div class="sig-name">{{ $mgrAppr?->actor?->name ?? '( Manager )' }}</div>
                 <div class="sig-date">{{ $mgrAppr ? $mgrAppr->created_at->format('d/m/Y') : 'Menunggu' }}</div>
             </td>
             <td>
-                <div class="sig-role">Divalidasi:</div>
+                <div class="sig-role">3. Disetujui Final (ACC Finance / Owner):</div>
                 <div class="sig-space"></div>
                 <div class="sig-name">{{ $finAppr?->actor?->name ?? '( Admin / Finance )' }}</div>
-                <div class="sig-date">{{ $finAppr ? $finAppr->created_at->format('d/m/Y') : 'Menunggu' }}</div>
-            </td>
-            <td>
-                <div class="sig-role">Disetujui:</div>
-                <div class="sig-space"></div>
-                <div class="sig-name">{{ $ownAppr?->actor?->name ?? '( Direktur / Owner )' }}</div>
-                <div class="sig-date">{{ $ownAppr ? $ownAppr->created_at->format('d/m/Y') : 'Menunggu' }}</div>
+                <div class="sig-date">{{ $finAppr ? $finAppr->created_at->format('d/m/Y') : ($disposition->approval_status === 'approved' ? 'ACC Selesai' : 'Menunggu') }}</div>
             </td>
         </tr>
     </table>

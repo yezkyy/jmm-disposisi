@@ -89,6 +89,15 @@ class DocumentAndReportTest extends TestCase
         $response->assertSee('JMM/2026/0099');
     }
 
+    public function test_user_can_view_image_format_document(): void
+    {
+        $response = $this->actingAs($this->user)->get(route('dispositions.image', $this->disposition));
+        $response->assertStatus(200);
+        $response->assertSee('FORMULIR DISPOSISI PENGELUARAN DANA');
+        $response->assertSee('JMM/2026/0099');
+        $response->assertSee('Unduh Gambar (JPG)');
+    }
+
     public function test_user_can_view_reports_page(): void
     {
         $response = $this->actingAs($this->user)->get(route('reports.index'));

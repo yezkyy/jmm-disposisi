@@ -227,5 +227,87 @@ class DispositionTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Disposisi untuk Manajer');
     }
+
+    public function test_create_disposition_with_item_receipts_and_ppn_without_category(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $receiptOli = \Illuminate\Http\UploadedFile::fake()->create('nota_oli.jpg', 200, 'image/jpeg');
+        $invoiceUtama = \Illuminate\Http\UploadedFile::fake()->create('invoice_utama.pdf', 500, 'application/pdf');
+
+        $postData = [
+            'action' => 'submit',
+            'disposition_date' => now()->toDateString(),
+            'division_id' => $this->division->id,
+            'subject' => 'Pembelian Oli Mesin dan Sparepart Logistik',
+            'description' => 'Disposisi dengan nota per item dan invoice utama',
+            'ppn' => 110000,
+            'items' => [
+                [
+                    'description' => 'Pembelian Oli Mesin Meditran SX',
+                    'qty' => 10,
+                    'unit' => 'Liter',
+                    'amount' => 1000000,
+                    'receipt' => $receiptOli,
+                ],
+            ],
+            'recipients' => [
+                [
+                    'recipient_name' => 'Toko Sumber Oli',
+                    'recipient_type' => 'vendor',
+                    'amount' => 1110000,
+                    'primary_bank_account_id' => $this->bankAccount->id,
+                    'primary_bank_name' => 'Bank Mandiri',
+                    'primary_account_number' => '0081234567890',
+                    'primary_account_holder' => 'Budi Santoso',
+                ],
+            ],
+            'attachments' => [$invoiceUtama],
+        ];
+
+        $response = $this->actingAs($this->pemohon)->post(route('dispositions.store'), $postData);
+        $response->assertSessionHasNoErrors();
+
+        $disposition = Disposition::where('subject', 'Pembelian Oli Mesin dan Sparepart Logistik')->first();
+        $this->assertNotNull($disposition);
+        // Total = 1.000.000 (items) + 110.000 (ppn) = 1.110.000
+        $this->assertEquals(1110000, (float) $disposition->requested_total);
+        $this->assertEquals(110000, (float) $disposition->ppn);
+
+        // Check item has receipt path and name
+        $item = $disposition->items->first();
+        $this->assertNotNull($item->receipt_path);
+        $this->assertEquals('nota_oli.jpg', $item->receipt_name);
+        $this->assertEquals('Pembelian Oli Mesin Meditran SX', $item->description);
+        $this->assertEquals(10, (float) $item->qty);
+        $this->assertEquals('Liter', $item->unit);
+
+        // Check global attachment is preserved
+        $this->assertEquals(1, $disposition->attachments()->count());
+    }
+
+    public function test_admin_finance_can_delete_disposition(): void
+    {
+        $adminRole = Role::where('name', 'admin_finance')->first();
+        $admin = User::factory()->create([
+            'name' => 'Admin Fin',
+            'email' => 'admin_fin@jmm.test',
+            'role_id' => $adminRole->id,
+            'is_active' => true,
+        ]);
+
+        $disp = Disposition::create([
+            'disposition_number' => 'JMM/2026/0999',
+            'applicant_id' => $this->pemohon->id,
+            'disposition_date' => now()->toDateString(),
+            'subject' => 'Disposisi Yang Akan Dihapus Admin',
+            'requested_total' => 500000,
+            'approval_status' => Disposition::STATUS_WAITING_MANAGER,
+        ]);
+
+        $response = $this->actingAs($admin)->delete(route('dispositions.destroy', $disp));
+        $response->assertRedirect(route('dispositions.index'));
+        $this->assertDatabaseMissing('dispositions', ['id' => $disp->id]);
+    }
 }
 

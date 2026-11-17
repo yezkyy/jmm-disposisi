@@ -110,7 +110,7 @@
             </div>
         </div>
 
-        <!-- 2. Rincian Pengeluaran (Multi-item) -->
+        <!-- 2. Rincian Pengeluaran (Items: Uraian Kebutuhan, Qty, Satuan, Subtotal, Nota) -->
         <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div>
@@ -118,7 +118,7 @@
                         <i data-lucide="list-ordered" class="w-4 h-4 text-primary-600"></i>
                         2. Rincian Pengeluaran (Items)
                     </h2>
-                    <p class="text-[11px] text-slate-500">Tambahkan satu atau banyak uraian biaya dengan kategorinya masing-masing.</p>
+                    <p class="text-[11px] text-slate-500">Input uraian kebutuhan secara langsung, tentukan Qty & Satuan, serta unggah nota/bukti transaksi per baris kebutuhan.</p>
                 </div>
                 <button type="button" onclick="addItemRow()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-50 hover:bg-primary-100 text-primary-700 text-xs font-semibold border border-primary-200 transition">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -130,28 +130,36 @@
                 <table class="w-full text-left text-xs border-collapse" id="items-table">
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px] uppercase tracking-wider">
-                            <th class="py-2.5 px-3 w-1/4">Kategori Pengeluaran</th>
-                            <th class="py-2.5 px-3 w-1/2">Uraian Kebutuhan</th>
-                            <th class="py-2.5 px-3 w-1/4 text-right">Nominal (Rp)</th>
-                            <th class="py-2.5 px-2 text-center w-12">Hapus</th>
+                            <th class="py-2.5 px-2 text-center w-8">#</th>
+                            <th class="py-2.5 px-3">Uraian Kebutuhan <span class="text-rose-500">*</span></th>
+                            <th class="py-2.5 px-2 text-right w-20">Qty <span class="text-rose-500">*</span></th>
+                            <th class="py-2.5 px-2 text-center w-24">Satuan <span class="text-rose-500">*</span></th>
+                            <th class="py-2.5 px-3 text-right w-36">Subtotal (Rp) <span class="text-rose-500">*</span></th>
+                            <th class="py-2.5 px-3 w-52">Upload Nota / Bukti</th>
+                            <th class="py-2.5 px-2 text-center w-10">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="items-container" class="divide-y divide-slate-100">
                         <!-- Default 1 Row -->
                         <tr class="item-row" data-index="0">
+                            <td class="py-2.5 px-2 text-center text-slate-400 font-semibold row-number align-middle">1</td>
                             <td class="py-2.5 px-3 align-top">
-                                <select name="items[0][category_id]" required class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-                                    <option value="">-- Pilih Kategori --</option>
-                                    @foreach ($categories as $cat)
-                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                    @endforeach
-                                </select>
+                                <input type="text" name="items[0][description]" required placeholder="Contoh: Pembelian Oli Mesin, Sparepart, ATK..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium">
                             </td>
-                            <td class="py-2.5 px-3 align-top">
-                                <input type="text" name="items[0][description]" required placeholder="Uraian barang/jasa..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <td class="py-2.5 px-2 align-top">
+                                <input type="number" step="any" min="0.01" name="items[0][qty]" value="1" required class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </td>
+                            <td class="py-2.5 px-2 align-top">
+                                <input type="text" name="items[0][unit]" value="Pcs" placeholder="Pcs, unit, liter..." required class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                             </td>
                             <td class="py-2.5 px-3 align-top">
                                 <input type="number" step="any" name="items[0][amount]" required min="0" placeholder="0" oninput="calculateTotal()" class="item-amount w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-right font-mono font-semibold">
+                            </td>
+                            <td class="py-2.5 px-3 align-top">
+                                <div class="space-y-1">
+                                    <input type="file" name="items[0][receipt]" accept=".pdf,.jpg,.jpeg,.png" onchange="previewItemFile(this)" class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-lg">
+                                    <span class="file-chosen-name text-[10px] text-emerald-600 font-semibold block truncate hidden"></span>
+                                </div>
                             </td>
                             <td class="py-2.5 px-2 text-center align-middle">
                                 <button type="button" onclick="removeItemRow(this)" class="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Hapus baris">
@@ -161,14 +169,32 @@
                         </tr>
                     </tbody>
                     <tfoot>
-                        <tr class="bg-slate-50 font-bold border-t border-slate-200 text-slate-800">
-                            <td colspan="2" class="py-3 px-3 text-right uppercase tracking-wider text-xs">
-                                Total Pengajuan :
+                        <tr class="bg-slate-50/50 border-t border-slate-200 text-slate-700 font-semibold text-xs">
+                            <td colspan="4" class="py-2 px-3 text-right uppercase tracking-wider text-[11px]">
+                                Subtotal Rincian Kebutuhan:
                             </td>
-                            <td class="py-3 px-3 text-right text-sm font-mono text-primary-700" id="total-display">
+                            <td class="py-2 px-3 text-right font-mono font-bold" id="subtotal-items-display">
                                 Rp 0
                             </td>
-                            <td></td>
+                            <td colspan="2"></td>
+                        </tr>
+                        <tr class="bg-slate-50/50 border-t border-slate-100 text-slate-700 font-semibold text-xs">
+                            <td colspan="4" class="py-2 px-3 text-right uppercase tracking-wider text-[11px]">
+                                PPN (Opsional, Boleh Kosong):
+                            </td>
+                            <td class="py-2 px-2 text-right">
+                                <input type="number" step="any" min="0" name="ppn" id="input-ppn" value="{{ old('ppn', 0) }}" placeholder="0" oninput="calculateTotal()" class="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-right font-mono font-semibold">
+                            </td>
+                            <td colspan="2" class="text-[10px] text-slate-400 pl-3 align-middle italic">Diisi jika transaksi dikenakan PPN</td>
+                        </tr>
+                        <tr class="bg-blue-50/60 font-bold border-t-2 border-slate-200 text-slate-800">
+                            <td colspan="4" class="py-3 px-3 text-right uppercase tracking-wider text-xs text-blue-900">
+                                Total Pengajuan Disposisi :
+                            </td>
+                            <td class="py-3 px-3 text-right text-sm font-mono text-primary-700 font-extrabold" id="total-display">
+                                Rp 0
+                            </td>
+                            <td colspan="2"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -382,26 +408,49 @@
     let itemIndex = 1;
     let recipientIndex = 1;
 
-    // Tambah Baris Rincian Item
+    function renumberItemRows() {
+        document.querySelectorAll('#items-container .item-row').forEach((row, i) => {
+            const num = row.querySelector('.row-number');
+            if (num) num.innerText = i + 1;
+        });
+    }
+
+    function previewItemFile(input) {
+        const parent = input.parentElement;
+        const label = parent.querySelector('.file-chosen-name');
+        if (input.files && input.files[0]) {
+            label.innerText = '✓ ' + input.files[0].name;
+            label.classList.remove('hidden');
+        } else {
+            label.classList.add('hidden');
+        }
+    }
+
+    // Tambah Baris Rincian Item (Uraian, Qty, Satuan, Subtotal, Upload Nota)
     function addItemRow() {
         const container = document.getElementById('items-container');
         const tr = document.createElement('tr');
         tr.className = 'item-row';
         tr.dataset.index = itemIndex;
         tr.innerHTML = `
+            <td class="py-2.5 px-2 text-center text-slate-400 font-semibold row-number align-middle">${itemIndex + 1}</td>
             <td class="py-2.5 px-3 align-top">
-                <select name="items[${itemIndex}][category_id]" required class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="">-- Pilih Kategori --</option>
-                    @foreach ($categories as $cat)
-                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                    @endforeach
-                </select>
+                <input type="text" name="items[${itemIndex}][description]" required placeholder="Contoh: Pembelian Oli Mesin, Sparepart, ATK..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium">
             </td>
-            <td class="py-2.5 px-3 align-top">
-                <input type="text" name="items[${itemIndex}][description]" required placeholder="Uraian barang/jasa..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <td class="py-2.5 px-2 align-top">
+                <input type="number" step="any" min="0.01" name="items[${itemIndex}][qty]" value="1" required class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </td>
+            <td class="py-2.5 px-2 align-top">
+                <input type="text" name="items[${itemIndex}][unit]" value="Pcs" placeholder="Pcs, unit, liter..." required class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
             </td>
             <td class="py-2.5 px-3 align-top">
                 <input type="number" step="any" name="items[${itemIndex}][amount]" required min="0" placeholder="0" oninput="calculateTotal()" class="item-amount w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-right font-mono font-semibold">
+            </td>
+            <td class="py-2.5 px-3 align-top">
+                <div class="space-y-1">
+                    <input type="file" name="items[${itemIndex}][receipt]" accept=".pdf,.jpg,.jpeg,.png" onchange="previewItemFile(this)" class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-lg">
+                    <span class="file-chosen-name text-[10px] text-emerald-600 font-semibold block truncate hidden"></span>
+                </div>
             </td>
             <td class="py-2.5 px-2 text-center align-middle">
                 <button type="button" onclick="removeItemRow(this)" class="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Hapus baris">
@@ -411,6 +460,7 @@
         `;
         container.appendChild(tr);
         itemIndex++;
+        renumberItemRows();
         if (window.refreshLucideIcons) window.refreshLucideIcons();
     }
 
@@ -426,17 +476,26 @@
             return;
         }
         btn.closest('tr').remove();
+        renumberItemRows();
         calculateTotal();
     }
 
-    // Kalkulasi Total Nominal Otomatis
+    // Kalkulasi Total Nominal Otomatis (Subtotal Items + PPN = Grand Total)
     function calculateTotal() {
-        let total = 0;
+        let subtotal = 0;
         document.querySelectorAll('.item-amount').forEach(input => {
             const val = parseFloat(input.value) || 0;
-            total += val;
+            subtotal += val;
         });
-        document.getElementById('total-display').innerText = 'Rp ' + total.toLocaleString('id-ID');
+        const ppnInput = document.getElementById('input-ppn');
+        const ppn = parseFloat(ppnInput ? ppnInput.value : 0) || 0;
+        const grandTotal = subtotal + ppn;
+
+        const subDisplay = document.getElementById('subtotal-items-display');
+        if (subDisplay) {
+            subDisplay.innerText = 'Rp ' + Math.round(subtotal).toLocaleString('id-ID');
+        }
+        document.getElementById('total-display').innerText = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID');
     }
 
     // Tambah Kartu Penerima

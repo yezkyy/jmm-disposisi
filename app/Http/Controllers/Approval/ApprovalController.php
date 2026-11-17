@@ -26,11 +26,11 @@ class ApprovalController extends Controller
         $user = Auth::user();
         $tab = $request->input('tab', 'pending'); // pending, history, all
 
-        // Tentukan status yang perlu ditinjau berdasarkan peran pengguna
+        // Tentukan status yang perlu ditinjau berdasarkan peran pengguna (2 Tahap: Manager -> Finance)
         $targetStatus = match (true) {
             $user->isManager() => Disposition::STATUS_WAITING_MANAGER,
             $user->isAdminFinance() => Disposition::STATUS_WAITING_FINANCE,
-            $user->isOwner() => Disposition::STATUS_WAITING_OWNER,
+            $user->isOwner() => Disposition::STATUS_WAITING_FINANCE,
             default => null,
         };
 
@@ -102,8 +102,8 @@ class ApprovalController extends Controller
         // Cek kesesuaian role dengan status
         $isEligible = match ($disposition->approval_status) {
             Disposition::STATUS_WAITING_MANAGER => $user->isManager(),
-            Disposition::STATUS_WAITING_FINANCE => $user->isAdminFinance(),
-            Disposition::STATUS_WAITING_OWNER => $user->isOwner(),
+            Disposition::STATUS_WAITING_FINANCE => $user->isAdminFinance() || $user->isOwner(),
+            Disposition::STATUS_WAITING_OWNER => $user->isOwner() || $user->isAdminFinance(),
             default => false,
         };
 
@@ -123,8 +123,8 @@ class ApprovalController extends Controller
         ]);
 
         $stageName = match ($disposition->approval_status) {
-            Disposition::STATUS_WAITING_MANAGER => 'Manager',
-            Disposition::STATUS_WAITING_FINANCE => 'Admin Finance',
+            Disposition::STATUS_WAITING_MANAGER => 'Manager (Tahap 1)',
+            Disposition::STATUS_WAITING_FINANCE => 'Admin Finance (Tahap 2 - Putusan Akhir Arahan Owner)',
             Disposition::STATUS_WAITING_OWNER => 'Owner / Direktur',
             default => 'Review',
         };

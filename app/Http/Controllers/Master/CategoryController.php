@@ -23,8 +23,8 @@ class CategoryController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -120,19 +120,22 @@ class CategoryController extends Controller
     }
 
     /**
-     * Hapus kategori.
+     * Hapus kategori pengeluaran.
      */
     public function destroy(Category $category): RedirectResponse
     {
-        // Periksa apakah kategori sudah pernah digunakan dalam transaksi di masa depan
         $name = $category->name;
         $old = $category->toArray();
-        $category->delete();
 
-        AuditLog::record('category_delete', null, $old, []);
+        try {
+            $category->delete();
+            AuditLog::record('category_delete', null, $old, []);
 
-        return redirect()->route('master.categories.index')
-            ->with('success', "Kategori '{$name}' berhasil dihapus.");
+            return redirect()->route('master.categories.index')
+                ->with('success', "Kategori '{$name}' berhasil dihapus.");
+        } catch (\Throwable $e) {
+            return redirect()->route('master.categories.index')
+                ->with('error', "Gagal menghapus kategori '{$name}': " . $e->getMessage());
+        }
     }
 }
-

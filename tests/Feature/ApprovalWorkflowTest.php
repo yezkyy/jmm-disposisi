@@ -110,7 +110,7 @@ class ApprovalWorkflowTest extends TestCase
     {
         $disp = $this->createActiveDisposition(5000000);
 
-        // 1. Manager Review & Full Approval
+        // 1. Manager Review & Full Approval (Tahap 1)
         $respManager = $this->actingAs($this->manager)->post(route('approvals.decide', $disp), [
             'decision' => 'approved',
             'notes' => 'Disetujui untuk kebutuhan mendesak.',
@@ -121,30 +121,19 @@ class ApprovalWorkflowTest extends TestCase
         $this->assertEquals(Disposition::STATUS_WAITING_FINANCE, $disp->approval_status);
         $this->assertEquals(5000000, (float) $disp->manager_approved_total);
 
-        // 2. Finance Verification
+        // 2. Finance Final Approval Berdasarkan Arahan Owner (Tahap 2 - Status Akhir ACC)
         $respFinance = $this->actingAs($this->adminFinance)->post(route('approvals.decide', $disp), [
             'decision' => 'approved',
-            'notes' => 'Kelengkapan dokumen dan anggaran valid.',
+            'notes' => 'ACC Disposisi sesuai instruksi Owner melalui WhatsApp.',
         ]);
         $respFinance->assertRedirect(route('approvals.index'));
-
-        $disp->refresh();
-        $this->assertEquals(Disposition::STATUS_WAITING_OWNER, $disp->approval_status);
-        $this->assertEquals(5000000, (float) $disp->finance_verified_total);
-
-        // 3. Owner Final Approval
-        $respOwner = $this->actingAs($this->owner)->post(route('approvals.decide', $disp), [
-            'decision' => 'approved',
-            'notes' => 'Persetujuan akhir direktur.',
-        ]);
-        $respOwner->assertRedirect(route('approvals.index'));
 
         $disp->refresh();
         $this->assertEquals(Disposition::STATUS_APPROVED, $disp->approval_status);
         $this->assertEquals(5000000, (float) $disp->final_approved_total);
 
-        // Verifikasi tabel disposition_approvals
-        $this->assertEquals(3, $disp->approvals()->count());
+        // Verifikasi tabel disposition_approvals (2 tahap: Manager & Finance)
+        $this->assertEquals(2, $disp->approvals()->count());
     }
 
     public function test_self_approval_is_strictly_forbidden(): void
@@ -194,23 +183,30 @@ class ApprovalWorkflowTest extends TestCase
         $this->assertEquals(Disposition::STATUS_WAITING_FINANCE, $disp->approval_status);
         $this->assertEquals(7000000, (float) $disp->manager_approved_total);
 
-        // Finance verifikasi
-        $this->actingAs($this->adminFinance)->post(route('approvals.decide', $disp), [
-            'decision' => 'approved',
-            'notes' => 'Verifikasi finance sesuai persetujuan manager.',
-        ]);
-
-        // Owner final partial approval (Rp 6.000.000)
-        $respOwner = $this->actingAs($this->owner)->post(route('approvals.decide', $disp), [
+        // Finance final approval sebagian berdasarkan instruksi Owner (Rp 6.000.000)
+        $respFinance = $this->actingAs($this->adminFinance)->post(route('approvals.decide', $disp), [
             'decision' => 'partially_approved',
             'approved_amount' => 6000000,
-            'notes' => 'Dipotong Rp 1.000.000 untuk efisiensi cashflow bulan ini.',
+            'notes' => 'Dipotong Rp 1.000.000 untuk efisiensi cashflow sesuai arahan Owner.',
         ]);
-        $respOwner->assertRedirect(route('approvals.index'));
+        $respFinance->assertRedirect(route('approvals.index'));
 
         $disp->refresh();
         $this->assertEquals(Disposition::STATUS_PARTIALLY_APPROVED, $disp->approval_status);
         $this->assertEquals(6000000, (float) $disp->final_approved_total);
+    }
+
+    public function test_manager_cannot_edit_or_delete_disposition(): void
+    {
+        $disp = $this->createActiveDisposition(3000000);
+
+        // Manager tidak boleh mengedit atau menghapus
+        $this->assertFalse($disp->canBeEditedBy($this->manager));
+        $this->assertFalse($disp->canBeDeletedBy($this->manager));
+
+        // Admin Finance memiliki full access (bisa edit dan hapus)
+        $this->assertTrue($disp->canBeEditedBy($this->adminFinance));
+        $this->assertTrue($disp->canBeDeletedBy($this->adminFinance));
     }
 
     public function test_revision_requested_returns_to_applicant(): void

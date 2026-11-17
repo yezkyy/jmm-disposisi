@@ -44,11 +44,11 @@ class ApprovalService
         if ($stage === DispositionApproval::STAGE_MANAGER && !$actor->isManager()) {
             throw new InvalidArgumentException('Hanya Manager yang berwenang memproses persetujuan pada tahap ini.');
         }
-        if ($stage === DispositionApproval::STAGE_FINANCE && !$actor->isAdminFinance()) {
-            throw new InvalidArgumentException('Hanya Admin / Finance yang berwenang memverifikasi pada tahap ini.');
+        if ($stage === DispositionApproval::STAGE_FINANCE && !($actor->isAdminFinance() || $actor->isOwner())) {
+            throw new InvalidArgumentException('Hanya Admin / Finance yang berwenang menentukan status ACC atau TIDAK ACC pada tahap ini berdasarkan arahan Owner.');
         }
-        if ($stage === DispositionApproval::STAGE_OWNER && !$actor->isOwner()) {
-            throw new InvalidArgumentException('Hanya Owner / Direktur yang berwenang memproses persetujuan final.');
+        if ($stage === DispositionApproval::STAGE_OWNER && !($actor->isOwner() || $actor->isAdminFinance())) {
+            throw new InvalidArgumentException('Hanya Owner / Finance yang berwenang memproses persetujuan final.');
         }
 
         // 3. Validasi parameter keputusan
@@ -99,8 +99,11 @@ class ApprovalService
                         $locked->manager_approved_total = $locked->requested_total;
                         $locked->approval_status = Disposition::STATUS_WAITING_FINANCE;
                     } elseif ($stage === DispositionApproval::STAGE_FINANCE) {
+                        // Tahap 2 (Akhir): Finance menentukan status ACC berdasarkan arahan Owner
                         $locked->finance_verified_total = $locked->manager_approved_total ?? $locked->requested_total;
-                        $locked->approval_status = Disposition::STATUS_WAITING_OWNER;
+                        $locked->owner_approved_total = $locked->finance_verified_total;
+                        $locked->final_approved_total = $locked->finance_verified_total;
+                        $locked->approval_status = Disposition::STATUS_APPROVED;
                     } elseif ($stage === DispositionApproval::STAGE_OWNER) {
                         $locked->owner_approved_total = $locked->finance_verified_total ?? $locked->requested_total;
                         $locked->final_approved_total = $locked->owner_approved_total;
@@ -114,8 +117,11 @@ class ApprovalService
                         $locked->manager_approved_total = $approvedAmount;
                         $locked->approval_status = Disposition::STATUS_WAITING_FINANCE;
                     } elseif ($stage === DispositionApproval::STAGE_FINANCE) {
+                        // Tahap 2 (Akhir): Finance menentukan nominal ACC berdasarkan arahan Owner
                         $locked->finance_verified_total = $approvedAmount;
-                        $locked->approval_status = Disposition::STATUS_WAITING_OWNER;
+                        $locked->owner_approved_total = $approvedAmount;
+                        $locked->final_approved_total = $approvedAmount;
+                        $locked->approval_status = Disposition::STATUS_PARTIALLY_APPROVED;
                     } elseif ($stage === DispositionApproval::STAGE_OWNER) {
                         $locked->owner_approved_total = $approvedAmount;
                         $locked->final_approved_total = $approvedAmount;
@@ -168,4 +174,3 @@ class ApprovalService
         });
     }
 }
-

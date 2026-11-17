@@ -37,6 +37,7 @@ class Disposition extends Model
         'approval_status',
         'payment_status',
         'requested_total',
+        'ppn',
         'manager_approved_total',
         'finance_verified_total',
         'owner_approved_total',
@@ -51,6 +52,7 @@ class Disposition extends Model
         'disposition_date' => 'date',
         'submitted_at' => 'datetime',
         'requested_total' => 'decimal:2',
+        'ppn' => 'decimal:2',
         'manager_approved_total' => 'decimal:2',
         'finance_verified_total' => 'decimal:2',
         'owner_approved_total' => 'decimal:2',
@@ -167,14 +169,48 @@ class Disposition extends Model
 
     /**
      * Cek apakah disposisi dapat diedit oleh user tertentu.
+     * Admin/Finance: full access (dapat mengedit data disposisi).
+     * Manager: tidak memiliki akses untuk mengedit atau menghapus data disposisi.
+     * Pemohon: hanya jika draft atau revisi milik sendiri.
      */
     public function canBeEditedBy(User $user): bool
     {
-        if ($this->applicant_id !== $user->id) {
+        if ($user->isAdminFinance()) {
+            return true;
+        }
+
+        if ($user->isManager()) {
             return false;
         }
 
-        return in_array($this->approval_status, [self::STATUS_DRAFT, self::STATUS_REVISION_REQUESTED], true);
+        if ($this->applicant_id === $user->id) {
+            return in_array($this->approval_status, [self::STATUS_DRAFT, self::STATUS_REVISION_REQUESTED], true);
+        }
+
+        return false;
+    }
+
+    /**
+     * Cek apakah disposisi dapat dihapus oleh user tertentu.
+     * Admin/Finance: dapat menghapus data disposisi.
+     * Manager: tidak memiliki akses hapus.
+     * Pemohon: hanya draft miliknya sendiri.
+     */
+    public function canBeDeletedBy(User $user): bool
+    {
+        if ($user->isAdminFinance()) {
+            return true;
+        }
+
+        if ($user->isManager()) {
+            return false;
+        }
+
+        if ($this->applicant_id === $user->id) {
+            return $this->approval_status === self::STATUS_DRAFT;
+        }
+
+        return false;
     }
 
     /**
@@ -191,7 +227,7 @@ class Disposition extends Model
             return true;
         }
 
-        if ($this->approval_status === self::STATUS_WAITING_FINANCE && $user->isAdminFinance()) {
+        if ($this->approval_status === self::STATUS_WAITING_FINANCE && ($user->isAdminFinance() || $user->isOwner())) {
             return true;
         }
 
