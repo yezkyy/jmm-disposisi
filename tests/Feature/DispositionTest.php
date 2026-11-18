@@ -577,5 +577,49 @@ class DispositionTest extends TestCase
         $respPurchase->assertSee('4');
         $respPurchase->assertSee('Set');
     }
+
+    public function test_qty_is_formatted_without_trailing_zeros_in_views_and_inputs(): void
+    {
+        $disp = Disposition::create([
+            'disposition_number' => 'JMM/2026/0091',
+            'applicant_id' => $this->pemohon->id,
+            'disposition_date' => now()->toDateString(),
+            'subject' => 'Pembelian Oli Mesin 26 Pcs',
+            'requested_total' => 2600000,
+            'approval_status' => Disposition::STATUS_DRAFT,
+        ]);
+
+        $itemWhole = $disp->items()->create([
+            'description' => 'Oli Mesin Diesel 26 Pcs',
+            'qty' => 26.00,
+            'unit' => 'Pcs',
+            'amount' => 2600000,
+        ]);
+
+        $this->assertEquals(26, $itemWhole->qty);
+        $this->assertEquals('26', $itemWhole->formatted_qty);
+        $this->assertNotEquals('26.00', (string) $itemWhole->qty);
+
+        // Uji di halaman edit: input Qty TIDAK boleh ada .00 (harus value="26")
+        $response = $this->actingAs($this->pemohon)->get(route('dispositions.edit', $disp));
+        $response->assertStatus(200);
+        $response->assertSee('value="26"', false);
+        $response->assertDontSee('value="26.00"', false);
+
+        // Uji desimal non-nol: 26.5 harus jadi '26,5' di formatted_qty dan 26.5 di input
+        $itemDecimal = $disp->items()->create([
+            'description' => 'Solar 26.5 Liter',
+            'qty' => 26.50,
+            'unit' => 'Liter',
+            'amount' => 300000,
+        ]);
+
+        $this->assertEquals(26.5, $itemDecimal->qty);
+        $this->assertEquals('26,5', $itemDecimal->formatted_qty);
+
+        $responseDecimal = $this->actingAs($this->pemohon)->get(route('dispositions.edit', $disp));
+        $responseDecimal->assertSee('value="26.5"', false);
+        $responseDecimal->assertDontSee('value="26.50"', false);
+    }
 }
 

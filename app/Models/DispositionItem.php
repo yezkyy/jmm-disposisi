@@ -24,9 +24,18 @@ class DispositionItem extends Model
     ];
 
     protected $casts = [
-        'qty' => 'decimal:2',
+        'qty' => 'float',
         'amount' => 'decimal:2',
     ];
+
+    public function getQtyAttribute($value): ?float
+    {
+        if (is_null($value) || trim((string)$value) === '') {
+            return null;
+        }
+
+        return (float) $value;
+    }
 
     public function getItemNameAttribute(): string
     {
@@ -35,7 +44,21 @@ class DispositionItem extends Model
 
     public function getQuantityAttribute(): ?float
     {
-        return !is_null($this->qty) && trim((string)$this->qty) !== '' ? (float) $this->qty : null;
+        return $this->qty;
+    }
+
+    public function getFormattedQtyAttribute(): ?string
+    {
+        if (is_null($this->qty)) {
+            return null;
+        }
+
+        $val = (float) $this->qty;
+        if (floor($val) == $val) {
+            return (string) (int) $val;
+        }
+
+        return rtrim(rtrim(number_format($val, 2, ',', '.'), '0'), ',');
     }
 
     public function getUnitAttribute(): ?string

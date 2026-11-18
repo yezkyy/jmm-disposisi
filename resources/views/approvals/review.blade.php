@@ -98,7 +98,7 @@
                                     {{ $item->category?->name ?? 'Umum' }}
                                 </span>
                             </td>
-                            <td class="py-2.5 px-2 text-right font-mono">{{ number_format($item->quantity, 2, ',', '.') }}</td>
+                            <td class="py-2.5 px-2 text-right font-mono">{{ $item->formatted_qty ?? '-' }}</td>
                             <td class="py-2.5 px-2 text-slate-500">{{ $item->unit }}</td>
                             <td class="py-2.5 px-2 text-right font-mono text-slate-600">Rp {{ number_format($item->unit_price, 2, ',', '.') }}</td>
                             <td class="py-2.5 px-2 text-right font-mono font-bold text-slate-800">Rp {{ number_format($item->amount, 2, ',', '.') }}</td>

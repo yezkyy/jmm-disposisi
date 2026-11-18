@@ -268,7 +268,7 @@
                     @endif
                     <td><strong>{{ $item->description }}</strong></td>
                     @if ($hasQtyUnit)
-                        <td class="text-right font-mono">{{ !is_null($item->qty) ? rtrim(rtrim(number_format((float) $item->qty, 2, ',', '.'), '0'), ',') : '-' }}</td>
+                        <td class="text-right font-mono">{{ $item->formatted_qty ?? '-' }}</td>
                         <td class="text-center">{{ $item->unit ?: '-' }}</td>
                     @endif
                     <td class="text-right font-mono font-bold">Rp {{ number_format((float) $item->amount, 2, ',', '.') }}</td>

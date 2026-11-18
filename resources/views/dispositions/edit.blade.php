@@ -204,7 +204,7 @@
                                         step="any" 
                                         min="0.01" 
                                         name="items[{{ $idx }}][qty]" 
-                                        value="{{ $item['qty'] ?? ($item['quantity'] ?? '') }}" 
+                                        value="{{ (isset($item['qty']) && $item['qty'] !== '' && !is_null($item['qty'])) ? (floor((float)$item['qty']) == (float)$item['qty'] ? (int)$item['qty'] : (float)$item['qty']) : '' }}" 
                                         placeholder="Qty" 
                                         class="item-qty w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     >

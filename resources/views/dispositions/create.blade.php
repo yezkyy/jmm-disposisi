@@ -168,7 +168,7 @@
                                 <input type="text" name="items[0][invoice_number]" placeholder="No. Inv..." class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
                             </td>
                             <td class="py-2.5 px-2 align-top">
-                                <input type="number" step="any" min="0.01" name="items[0][qty]" value="" placeholder="1" class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <input type="number" step="any" min="0.01" name="items[0][qty]" value="{{ (old('items.0.qty') !== null && old('items.0.qty') !== '') ? (floor((float)old('items.0.qty')) == (float)old('items.0.qty') ? (int)old('items.0.qty') : (float)old('items.0.qty')) : '' }}" placeholder="Qty" class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
                             </td>
                             <td class="py-2.5 px-2 align-top">
                                 <input type="text" name="items[0][unit]" value="" placeholder="Pcs, unit..." class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">

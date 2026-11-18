@@ -200,7 +200,7 @@
                                 </td>
                                 @if ($hasQtyUnit)
                                     <td class="py-2 px-2 text-right border-r border-slate-200 font-mono text-slate-800">
-                                        {{ !is_null($item->qty) ? rtrim(rtrim(number_format((float) $item->qty, 2, ',', '.'), '0'), ',') : '-' }}
+                                        {{ $item->formatted_qty ?? '-' }}
                                     </td>
                                     <td class="py-2 px-2 text-center border-r border-slate-200 text-slate-600">
                                         {{ $item->unit ?: '-' }}
