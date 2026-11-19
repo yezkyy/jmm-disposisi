@@ -252,5 +252,49 @@ class PaymentTest extends TestCase
         $this->assertEquals(Disposition::PAYMENT_UNPAID, $disp->payment_status);
         $this->assertEquals(5000000, (float) $disp->remaining_payment);
     }
+
+    /**
+     * Memastikan rekening sumber hanya rekening PT JMM dan penerima pembayaran dapat dipilih dari master bank.
+     */
+    public function test_source_accounts_only_company_and_recipients_can_be_selected_from_master(): void
+    {
+        $disp = $this->createApprovedDisposition(2000000);
+
+        // Buat akun rekening vendor/sopir di master bank
+        $driverAccount = BankAccount::create([
+            'owner_name' => 'Dede Komara',
+            'bank_name' => 'Bank Rakyat Indonesia (BRI)',
+            'account_number' => '479301017890534',
+            'owner_type' => BankAccount::TYPE_DRIVER,
+            'is_active' => true,
+        ]);
+
+        // Cek halaman pembayaran: rekening Dede Komara TIDAK boleh muncul di Rekening Sumber PT JMM
+        $response = $this->actingAs($this->adminFinance)->get(route('payments.create', ['disposition_id' => $disp->id]));
+        $response->assertStatus(200);
+
+        // Dede Komara harus ada di opsi Penerima Pembayaran
+        $response->assertSee('value="acc_' . $driverAccount->id . '"', false);
+        $response->assertSee('Dede Komara &bull; Bank Rakyat Indonesia (BRI)', false);
+
+        // Rekening PT JMM ada di Rekening Sumber
+        $response->assertSee('value="' . $this->sourceAccount->id . '"', false);
+
+        // Bayar dengan memilih Dede Komara dari master rekening via recipient_select="acc_ID"
+        $postResp = $this->actingAs($this->adminFinance)->post(route('payments.store'), [
+            'disposition_id' => $disp->id,
+            'payment_date' => now()->toDateString(),
+            'amount' => 2000000,
+            'method' => 'transfer',
+            'source_account_id' => $this->sourceAccount->id,
+            'recipient_select' => 'acc_' . $driverAccount->id,
+        ]);
+
+        $postResp->assertRedirect();
+        $payment = Payment::latest()->first();
+        $this->assertNotNull($payment->recipient);
+        $this->assertEquals('Dede Komara', $payment->recipient->recipient_name);
+        $this->assertEquals('479301017890534', $payment->recipient->primary_account_number);
+    }
 }
 

@@ -106,14 +106,34 @@ class PaymentController extends Controller
             ->latest('disposition_date')
             ->get();
 
-        $sourceAccounts = BankAccount::active()->with('bank')->get();
+        // Ambil daftar rekening sumber: khusus rekening bank resmi milik PT JMM / Perusahaan
+        $sourceAccounts = BankAccount::active()
+            ->where(function ($q) {
+                $q->where('owner_type', BankAccount::TYPE_COMPANY)
+                  ->orWhere('owner_name', 'like', '%Jaya Mukti Mandiri%')
+                  ->orWhere('owner_name', 'like', '%PT JMM%')
+                  ->orWhere('owner_reference', 'like', '%KAS-PERUSAHAAN%');
+            })
+            ->with('bank')
+            ->get();
+
+        // Seluruh rekening penerima terdaftar dari Master Rekening Bank (Karyawan, Sopir, Vendor, Lainnya)
+        $registeredRecipients = BankAccount::active()
+            ->where(function ($q) {
+                $q->where('owner_type', '!=', BankAccount::TYPE_COMPANY)
+                  ->where('owner_name', 'not like', '%Jaya Mukti Mandiri%')
+                  ->where('owner_name', 'not like', '%PT JMM%');
+            })
+            ->with('bank')
+            ->orderBy('owner_name')
+            ->get();
 
         $breadcrumbs = [
             ['label' => 'Modul Pembayaran', 'url' => route('payments.index')],
             ['label' => 'Catat Pembayaran Baru', 'url' => ''],
         ];
 
-        return view('payments.create', compact('selectedDisposition', 'payableDispositions', 'sourceAccounts', 'breadcrumbs'));
+        return view('payments.create', compact('selectedDisposition', 'payableDispositions', 'sourceAccounts', 'registeredRecipients', 'breadcrumbs'));
     }
 
     /**
@@ -121,6 +141,45 @@ class PaymentController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Dukungan fleksibel pemilihan penerima dari dropdown (rec_ID atau acc_ID atau recipient_id langsung)
+        $recipientId = $request->input('recipient_id');
+        $recipientSelect = $request->input('recipient_select');
+
+        if ($recipientSelect) {
+            if (str_starts_with($recipientSelect, 'rec_')) {
+                $recipientId = (int) substr($recipientSelect, 4);
+            } elseif (str_starts_with($recipientSelect, 'acc_')) {
+                $accountId = (int) substr($recipientSelect, 4);
+                $account = BankAccount::find($accountId);
+                if ($account) {
+                    $disp = Disposition::find($request->input('disposition_id'));
+                    if ($disp) {
+                        $existing = $disp->recipients()
+                            ->where(function ($q) use ($account) {
+                                $q->where('primary_bank_account_id', $account->id)
+                                  ->orWhere('primary_account_number', $account->account_number);
+                            })->first();
+
+                        if (!$existing) {
+                            $cleanAmount = (float) str_replace(['Rp', '.', ' ', ','], ['', '', '', '.'], (string)($request->input('amount') ?? 0));
+                            $existing = $disp->recipients()->create([
+                                'recipient_name' => $account->owner_name,
+                                'recipient_type' => $account->owner_type ?: 'other',
+                                'primary_bank_account_id' => $account->id,
+                                'primary_account_name' => $account->owner_name,
+                                'primary_bank_name' => $account->bank_name,
+                                'primary_account_number' => $account->account_number,
+                                'allocated_amount' => $cleanAmount,
+                                'notes' => 'Dipilih dari Master Rekening saat realisasi pembayaran',
+                            ]);
+                        }
+                        $recipientId = $existing->id;
+                    }
+                }
+            }
+            $request->merge(['recipient_id' => $recipientId]);
+        }
+
         $validated = $request->validate([
             'disposition_id' => ['required', 'exists:dispositions,id'],
             'payment_date' => ['required', 'date'],

@@ -101,6 +101,7 @@
                         Jenis Pemilik <span class="text-rose-500">*</span>
                     </label>
                     <select id="owner_type" name="owner_type" required class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('owner_type') border-rose-500 bg-rose-50/20 @else border-slate-200 @enderror focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                        <option value="company" {{ old('owner_type', $bankAccount->owner_type) === 'company' ? 'selected' : '' }}>Perusahaan (PT JMM)</option>
                         <option value="employee" {{ old('owner_type', $bankAccount->owner_type) === 'employee' ? 'selected' : '' }}>Karyawan</option>
                         <option value="driver" {{ old('owner_type', $bankAccount->owner_type) === 'driver' ? 'selected' : '' }}>Sopir</option>
                         <option value="vendor" {{ old('owner_type', $bankAccount->owner_type) === 'vendor' ? 'selected' : '' }}>Vendor</option>

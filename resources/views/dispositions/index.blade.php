@@ -409,10 +409,16 @@
                         </div>
 
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">
-                                File Bukti Transfer (JPG / JPEG / PNG) <span class="text-rose-500">*</span>
-                            </label>
-                            <input type="file" name="file" accept=".jpg,.jpeg,.png" required class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer border border-slate-200 rounded-xl bg-white">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-[11px] font-semibold text-slate-700">
+                                    File Bukti Transfer (JPG / JPEG / PNG) <span class="text-rose-500">*</span>
+                                </label>
+                                <span class="text-[10px] text-emerald-700 font-semibold bg-emerald-100/70 px-1.5 py-0.5 rounded border border-emerald-200">
+                                    Bisa tekan <strong>Ctrl + V</strong> (Paste Screenshot)
+                                </span>
+                            </div>
+                            <input type="file" id="daily_proof_file" name="file" accept=".jpg,.jpeg,.png" required class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer border border-slate-200 rounded-xl bg-white">
+                            <span id="daily_proof_pasted_label" class="text-[11px] text-emerald-700 font-semibold mt-1 hidden flex items-center gap-1"></span>
                             <span class="text-[10px] text-slate-400 mt-1 block">Format: JPG, JPEG, PNG &bull; Maks. 10 MB per gambar</span>
                         </div>
 
@@ -577,5 +583,52 @@
         document.getElementById('image-lightbox-modal').classList.add('hidden');
         document.getElementById('lightbox-img').src = '';
     }
+
+    // Ctrl+V Paste Screenshot pada Modal Bukti Transfer Harian
+    window.addEventListener('paste', function(e) {
+        const modal = document.getElementById('daily-proof-modal');
+        if (!modal || modal.classList.contains('hidden')) return;
+
+        const clipboard = e.clipboardData || window.clipboardData;
+        if (!clipboard || !clipboard.items) return;
+
+        const items = clipboard.items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
+                if (blob) {
+                    e.preventDefault();
+                    const now = new Date();
+                    const pad = (n) => String(n).padStart(2, '0');
+                    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+                    const ext = blob.type === 'image/jpeg' ? 'jpg' : 'png';
+                    const filename = `bukti_transfer_${timestamp}.${ext}`;
+
+                    const file = new File([blob], filename, { type: blob.type, lastModified: Date.now() });
+
+                    try {
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        const fileInput = document.getElementById('daily_proof_file');
+                        fileInput.files = dt.files;
+
+                        const label = document.getElementById('daily_proof_pasted_label');
+                        if (label) {
+                            label.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600 inline"></i> Screenshot berhasil ditempel: <strong>${filename}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
+                            label.classList.remove('hidden');
+                            if (window.refreshLucideIcons) window.refreshLucideIcons();
+                        }
+
+                        if (window.showToast) {
+                            window.showToast('success', 'Screenshot berhasil ditempel (Ctrl+V) ke form bukti transfer!');
+                        }
+                    } catch (err) {
+                        console.error('DataTransfer paste error:', err);
+                    }
+                    break;
+                }
+            }
+        }
+    });
 </script>
 @endpush

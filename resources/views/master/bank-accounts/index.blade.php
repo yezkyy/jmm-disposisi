@@ -54,6 +54,7 @@
                 <label for="owner_type" class="block text-xs font-semibold text-slate-600 mb-1">Jenis Pemilik</label>
                 <select id="owner_type" name="owner_type" @change="submitFilter()" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
                     <option value="">Semua Jenis</option>
+                    <option value="company" {{ request('owner_type') === 'company' ? 'selected' : '' }}>Perusahaan (PT JMM)</option>
                     <option value="employee" {{ request('owner_type') === 'employee' ? 'selected' : '' }}>Karyawan</option>
                     <option value="driver" {{ request('owner_type') === 'driver' ? 'selected' : '' }}>Sopir</option>
                     <option value="vendor" {{ request('owner_type') === 'vendor' ? 'selected' : '' }}>Vendor</option>
@@ -111,6 +112,7 @@
                         <td class="py-3.5 px-4">
                             @php
                             $typeBadge = match($acc->owner_type) {
+                            'company' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
                             'employee' => 'bg-blue-50 text-blue-700 border-blue-200',
                             'driver' => 'bg-amber-50 text-amber-700 border-amber-200',
                             'vendor' => 'bg-purple-50 text-purple-700 border-purple-200',

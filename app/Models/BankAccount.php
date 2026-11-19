@@ -11,6 +11,7 @@ class BankAccount extends Model
 {
     use HasFactory;
 
+    public const TYPE_COMPANY = 'company';
     public const TYPE_EMPLOYEE = 'employee';
     public const TYPE_DRIVER = 'driver';
     public const TYPE_VENDOR = 'vendor';
@@ -55,6 +56,7 @@ class BankAccount extends Model
     public function getOwnerTypeLabelAttribute(): string
     {
         return match ($this->owner_type) {
+            self::TYPE_COMPANY => 'Perusahaan (PT JMM)',
             self::TYPE_EMPLOYEE => 'Karyawan',
             self::TYPE_DRIVER => 'Sopir',
             self::TYPE_VENDOR => 'Vendor',
