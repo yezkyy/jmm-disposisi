@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use App\Models\Bank;
 use App\Models\BankAccount;
 use App\Models\Category;
+use App\Models\DailyTransferProof;
 use App\Models\Disposition;
 use App\Models\Division;
 use App\Models\User;
@@ -89,6 +90,26 @@ class DispositionController extends Controller
 
         $dispositions = $query->paginate(10)->withQueryString();
 
+        // Metrik Disposisi Hari Ini (Revisi Versi 3 Poin 7)
+        $todayDate = now()->toDateString();
+        $todayDispositionsQuery = Disposition::whereDate('disposition_date', $todayDate);
+        if ($user->isPemohon()) {
+            $todayDispositionsQuery->where('applicant_id', $user->id);
+        }
+
+        $todayCount = (clone $todayDispositionsQuery)->count();
+        $todayNominal = (float) (clone $todayDispositionsQuery)->sum('requested_total');
+        $todayApproved = (float) (clone $todayDispositionsQuery)->whereIn('approval_status', [
+            Disposition::STATUS_APPROVED,
+            Disposition::STATUS_PARTIALLY_APPROVED
+        ])->sum(DB::raw('COALESCE(final_approved_total, requested_total)'));
+
+        // Bukti Transfer Harian (Revisi Versi 3 Poin 8)
+        $dailyTransferProofs = DailyTransferProof::with('uploader')
+            ->latest('transfer_date')
+            ->take(30)
+            ->get();
+
         $divisions = Division::active()->get();
         $categories = Category::active()->get();
         $applicants = User::whereHas('role', function ($rq) {
@@ -100,7 +121,17 @@ class DispositionController extends Controller
             ['label' => 'Daftar Disposisi', 'url' => route('dispositions.index')],
         ];
 
-        return view('dispositions.index', compact('dispositions', 'divisions', 'categories', 'applicants', 'breadcrumbs'));
+        return view('dispositions.index', compact(
+            'dispositions',
+            'divisions',
+            'categories',
+            'applicants',
+            'breadcrumbs',
+            'todayCount',
+            'todayNominal',
+            'todayApproved',
+            'dailyTransferProofs'
+        ));
     }
 
     /**

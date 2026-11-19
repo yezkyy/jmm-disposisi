@@ -11,16 +11,48 @@ class Terbilang
     /**
      * Konversi angka nominal uang ke kalimat terbilang Bahasa Indonesia.
      */
-    public static function make(float|int|string $number): string
+    public static function make(float|int|string|null $number): string
     {
-        $number = (float) str_replace(['Rp', '.', ' ', ','], ['', '', '', '.'], (string)$number);
-        $number = floor(abs($number));
-
-        if ($number <= 0) {
+        if (is_null($number)) {
             return 'Nol Rupiah';
         }
 
-        return self::convert($number) . ' Rupiah';
+        if (is_float($number) || is_int($number)) {
+            $val = floor(abs($number));
+        } else {
+            $raw = trim((string)$number);
+            if (is_numeric($raw)) {
+                // Standard numeric string (e.g. "67500000.00", "6782000.00", "50000")
+                $val = floor(abs((float)$raw));
+            } else {
+                // Formatted string (e.g. "Rp 67.500.000,00" or "67.500.000")
+                $cleaned = preg_replace('/[^\d,\.]/', '', $raw);
+                if (str_contains($cleaned, '.') && str_contains($cleaned, ',')) {
+                    // Indonesian format: . is thousands, , is decimal
+                    $cleaned = str_replace('.', '', $cleaned);
+                    $cleaned = str_replace(',', '.', $cleaned);
+                } elseif (str_contains($cleaned, '.') && !str_contains($cleaned, ',')) {
+                    if (substr_count($cleaned, '.') > 1) {
+                        $cleaned = str_replace('.', '', $cleaned);
+                    } else {
+                        $parts = explode('.', $cleaned);
+                        // If 3 digits after dot, e.g. "1.000", it's thousands separator
+                        if (strlen($parts[1]) === 3) {
+                            $cleaned = str_replace('.', '', $cleaned);
+                        }
+                    }
+                } elseif (str_contains($cleaned, ',') && !str_contains($cleaned, '.')) {
+                    $cleaned = str_replace(',', '.', $cleaned);
+                }
+                $val = floor(abs((float)$cleaned));
+            }
+        }
+
+        if ($val <= 0) {
+            return 'Nol Rupiah';
+        }
+
+        return self::convert($val) . ' Rupiah';
     }
 
     protected static function convert(float $number): string

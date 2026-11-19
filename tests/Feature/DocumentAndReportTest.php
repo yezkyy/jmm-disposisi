@@ -71,6 +71,8 @@ class DocumentAndReportTest extends TestCase
         $this->assertEquals('Lima Juta Rupiah', Terbilang::make(5000000));
         $this->assertEquals('Satu Juta Dua Ratus Lima Puluh Ribu Rupiah', Terbilang::make(1250000));
         $this->assertEquals('Sepuluh Juta Rupiah', Terbilang::make(10000000));
+        $this->assertEquals('Enam Puluh Tujuh Juta Lima Ratus Ribu Rupiah', Terbilang::make('67500000.00'));
+        $this->assertEquals('Enam Juta Tujuh Ratus Delapan Puluh Dua Ribu Rupiah', Terbilang::make('6782000.00'));
         $this->assertEquals('Nol Rupiah', Terbilang::make(0));
     }
 

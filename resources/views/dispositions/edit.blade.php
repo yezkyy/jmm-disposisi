@@ -180,14 +180,13 @@
                             <tr class="item-row group hover:bg-slate-50/50 transition" data-index="{{ $idx }}">
                                 <td class="py-2.5 pr-2 text-center text-slate-400 font-semibold row-number align-middle">{{ $idx + 1 }}</td>
                                 <td class="py-2 px-2 align-top">
-                                    <input 
-                                        type="text" 
+                                    <textarea 
                                         name="items[{{ $idx }}][description]" 
-                                        value="{{ $item['description'] ?? ($item['item_name'] ?? '') }}" 
+                                        rows="2"
                                         required 
                                         placeholder="Contoh: Pembelian Oli, Sparepart, ATK..."
-                                        class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium"
-                                    >
+                                        class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium resize-y"
+                                    >{{ $item['description'] ?? ($item['item_name'] ?? '') }}</textarea>
                                 </td>
                                 <td class="py-2 px-2 align-top">
                                     <input 
@@ -202,9 +201,9 @@
                                     <input 
                                         type="number" 
                                         step="any" 
-                                        min="0.01" 
+                                        min="0" 
                                         name="items[{{ $idx }}][qty]" 
-                                        value="{{ (isset($item['qty']) && $item['qty'] !== '' && !is_null($item['qty'])) ? (floor((float)$item['qty']) == (float)$item['qty'] ? (int)$item['qty'] : (float)$item['qty']) : '' }}" 
+                                        value="{{ (isset($item['qty']) && $item['qty'] !== '' && !is_null($item['qty'])) ? ((float)$item['qty'] == (int)$item['qty'] ? (int)$item['qty'] : (float)$item['qty']) : '' }}" 
                                         placeholder="Qty" 
                                         class="item-qty w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     >
@@ -686,13 +685,13 @@
         tr.innerHTML = `
             <td class="py-2.5 pr-2 text-center text-slate-400 font-semibold row-number align-middle">${body.children.length + 1}</td>
             <td class="py-2 px-2 align-top">
-                <input 
-                    type="text" 
+                <textarea 
                     name="items[${itemIndex}][description]" 
+                    rows="2" 
                     required 
                     placeholder="Contoh: Pembelian Oli, Sparepart, ATK..."
-                    class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium"
-                >
+                    class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500 font-medium resize-y"
+                ></textarea>
             </td>
             <td class="py-2 px-2 align-top">
                 <input 
@@ -705,8 +704,8 @@
             <td class="py-2 px-2 align-top">
                 <input 
                     type="number" 
-                    step="any" 
-                    min="0.01" 
+                    step="1" 
+                    min="1" 
                     name="items[${itemIndex}][qty]" 
                     placeholder="Qty" 
                     class="item-qty w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-primary-500"

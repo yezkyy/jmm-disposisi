@@ -82,20 +82,18 @@
         <div id="document-card" class="p-10 shadow-2xl rounded-sm border border-slate-200">
             
             <!-- 1. KOP SURAT PERUSAHAAN -->
-            <div class="flex items-center gap-4 border-b-2 border-slate-900 pb-4 mb-4">
-                @if ($logoBase64)
-                    <div class="w-16 h-16 flex-shrink-0 flex items-center justify-center">
-                        <img src="{{ $logoBase64 }}" class="max-w-full max-h-full object-contain" alt="Logo">
-                    </div>
-                @else
-                    <div class="w-14 h-14 flex-shrink-0 rounded-xl bg-blue-700 text-white flex items-center justify-center font-black text-xl">
-                        JMM
-                    </div>
-                @endif
+            <div class="flex items-center gap-5 border-b-2 border-slate-900 pb-4 mb-4">
+                <div class="w-20 h-20 flex-shrink-0 flex items-center justify-center bg-white p-1 rounded-lg">
+                    @if ($logoBase64)
+                        <img src="{{ $logoBase64 }}" class="w-full h-full object-contain" alt="Logo JMM">
+                    @else
+                        <img src="{{ asset('images/logo.png') }}" class="w-full h-full object-contain" alt="Logo JMM" onerror="this.onerror=null; this.src='/images/logo.png';">
+                    @endif
+                </div>
                 <div class="flex-1">
-                    <h1 class="text-lg font-black text-slate-900 uppercase tracking-wide leading-tight">{{ $companyName }}</h1>
-                    <p class="text-[11px] text-slate-600 italic font-medium mt-0.5">{{ $companyTagline }}</p>
-                    <p class="text-[10px] text-slate-500 mt-0.5 leading-snug">
+                    <h1 class="text-xl font-black text-slate-900 uppercase tracking-wider leading-tight">{{ $companyName }}</h1>
+                    <p class="text-xs text-slate-700 font-semibold italic mt-0.5">{{ $companyTagline }}</p>
+                    <p class="text-[11px] text-slate-600 mt-1 leading-snug">
                         {{ $companyAddress }} &bull; Telp: {{ $companyPhone }} &bull; Email: {{ $companyEmail }}
                     </p>
                 </div>
@@ -196,7 +194,7 @@
                                     </td>
                                 @endif
                                 <td class="py-2 px-3 border-r border-slate-200 font-semibold text-slate-900">
-                                    {{ $item->description }}
+                                    <div class="whitespace-pre-line leading-relaxed">{{ $item->description }}</div>
                                 </td>
                                 @if ($hasQtyUnit)
                                     <td class="py-2 px-2 text-right border-r border-slate-200 font-mono text-slate-800">

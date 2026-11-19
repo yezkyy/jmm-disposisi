@@ -13,6 +13,31 @@ use Illuminate\View\View;
 class DispositionDocumentController extends Controller
 {
     /**
+     * Dapatkan logo perusahaan dalam bentuk base64 dengan pengecekan beberapa path fallback.
+     */
+    protected function getLogoBase64(): ?string
+    {
+        $candidatePaths = [
+            public_path('images/logo.png'),
+            base_path('public/images/logo.png'),
+            base_path('../public_html/images/logo.png'),
+            base_path('assets/logo.png'),
+            public_path('logo.png'),
+        ];
+
+        foreach ($candidatePaths as $path) {
+            if (file_exists($path) && is_readable($path)) {
+                $data = file_get_contents($path);
+                if ($data) {
+                    return 'data:image/png;base64,' . base64_encode($data);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Generate berkas formal PDF A4 Disposisi Pengeluaran.
      */
     public function pdf(Disposition $disposition): Response
@@ -31,13 +56,7 @@ class DispositionDocumentController extends Controller
         $companyPhone = CompanySetting::get('company_phone', '(0542) 765432');
         $companyEmail = CompanySetting::get('company_email', 'finance@jayamuktimandiri.co.id');
 
-        // Encode logo ke base64 agar dapat di-render DomPDF secara reliabel
-        $logoPath = public_path('images/logo.png');
-        $logoBase64 = null;
-        if (file_exists($logoPath)) {
-            $logoData = file_get_contents($logoPath);
-            $logoBase64 = 'data:image/png;base64,' . base64_encode($logoData);
-        }
+        $logoBase64 = $this->getLogoBase64();
 
         $effectiveTotal = $disposition->final_approved_total ?? $disposition->requested_total;
         $terbilang = Terbilang::make($effectiveTotal);
@@ -78,12 +97,7 @@ class DispositionDocumentController extends Controller
         $companyPhone = CompanySetting::get('company_phone', '(0542) 765432');
         $companyEmail = CompanySetting::get('company_email', 'finance@jayamuktimandiri.co.id');
 
-        $logoPath = public_path('images/logo.png');
-        $logoBase64 = null;
-        if (file_exists($logoPath)) {
-            $logoData = file_get_contents($logoPath);
-            $logoBase64 = 'data:image/png;base64,' . base64_encode($logoData);
-        }
+        $logoBase64 = $this->getLogoBase64();
 
         $effectiveTotal = $disposition->final_approved_total ?? $disposition->requested_total;
         $terbilang = Terbilang::make($effectiveTotal);
@@ -119,12 +133,7 @@ class DispositionDocumentController extends Controller
         $companyPhone = CompanySetting::get('company_phone', '(0542) 765432');
         $companyEmail = CompanySetting::get('company_email', 'finance@jayamuktimandiri.co.id');
 
-        $logoPath = public_path('images/logo.png');
-        $logoBase64 = null;
-        if (file_exists($logoPath)) {
-            $logoData = file_get_contents($logoPath);
-            $logoBase64 = 'data:image/png;base64,' . base64_encode($logoData);
-        }
+        $logoBase64 = $this->getLogoBase64();
 
         $effectiveTotal = $disposition->final_approved_total ?? $disposition->requested_total;
         $terbilang = Terbilang::make($effectiveTotal);

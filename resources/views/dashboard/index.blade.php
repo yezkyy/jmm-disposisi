@@ -45,6 +45,40 @@
         </div>
     </div>
 
+    <!-- Summary Harian Hari Ini (Revisi Versi 3 Poin 5) -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 mb-4 border-b border-slate-100 gap-2">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                </span>
+                <div>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">Ringkasan Aktivitas Disposisi Hari Ini</h2>
+                    <p class="text-[11px] text-slate-400">{{ now()->translatedFormat('l, d F Y') }}</p>
+                </div>
+            </div>
+            <a href="{{ route('dispositions.index', ['start_date' => now()->toDateString(), 'end_date' => now()->toDateString()]) }}" class="text-[11px] font-semibold text-primary-600 hover:text-primary-700 inline-flex items-center gap-1">
+                <span>Lihat Disposisi Hari Ini</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                <span class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Disposisi Diajukan Hari Ini</span>
+                <div class="text-2xl font-black text-slate-800 font-mono">{{ $todayCount }} <span class="text-xs font-normal text-slate-500 font-sans">Berkas</span></div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-blue-50/60 border border-blue-100">
+                <span class="text-[11px] font-bold uppercase text-blue-700 block mb-1">Total Nominal Pengajuan Hari Ini</span>
+                <div class="text-2xl font-black text-blue-900 font-mono">Rp {{ number_format($todayNominal, 0, ',', '.') }}</div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                <span class="text-[11px] font-bold uppercase text-emerald-700 block mb-1">Total Disetujui Hari Ini</span>
+                <div class="text-2xl font-black text-emerald-900 font-mono">Rp {{ number_format($todayApproved, 0, ',', '.') }}</div>
+            </div>
+        </div>
+    </div>
+
     <!-- 4 Live Financial KPI Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- 1. Total Pengajuan -->
@@ -276,6 +310,76 @@
                     </div>
                 @endforelse
             </div>
+        </div>
+    </div>
+
+    <!-- Rekapitulasi Disposisi Harian Berdasarkan Tanggal (Revisi Versi 3 Poin 5) -->
+    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                    <i data-lucide="calendar-days" class="w-4 h-4 text-primary-600"></i>
+                    Rekapitulasi Disposisi Harian Berdasarkan Tanggal
+                </h2>
+                <p class="text-[11px] text-slate-400 mt-0.5">Monitoring total nominal pengajuan, persetujuan, dan pencairan harian</p>
+            </div>
+            <a href="{{ route('reports.index') }}" class="text-[11px] font-semibold text-primary-600 hover:text-primary-700 inline-flex items-center gap-1">
+                <span>Laporan Lengkap</span>
+                <i data-lucide="arrow-right" class="w-3 h-3"></i>
+            </a>
+        </div>
+
+        <div class="overflow-x-auto -mx-6 px-6">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        <th class="py-2.5 px-3">Tanggal Disposisi</th>
+                        <th class="py-2.5 px-3 text-center">Jumlah Pengajuan</th>
+                        <th class="py-2.5 px-3 text-right">Total Nominal Diajukan</th>
+                        <th class="py-2.5 px-3 text-right">Total Nominal Disetujui</th>
+                        <th class="py-2.5 px-3 text-right">Realisasi Dibayar</th>
+                        <th class="py-2.5 px-3 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-xs">
+                    @forelse ($dailySummary as $day)
+                        <tr class="hover:bg-slate-50/60 transition">
+                            <td class="py-3 px-3 font-semibold text-slate-800">
+                                {{ \Carbon\Carbon::parse($day->disposition_date)->translatedFormat('l, d F Y') }}
+                                @if ($day->disposition_date === now()->toDateString())
+                                    <span class="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">Hari Ini</span>
+                                @endif
+                            </td>
+                            <td class="py-3 px-3 text-center">
+                                <span class="inline-flex px-2 py-0.5 rounded-full font-bold text-xs bg-slate-100 text-slate-700">
+                                    {{ $day->total_count }} Berkas
+                                </span>
+                            </td>
+                            <td class="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                                Rp {{ number_format((float) $day->total_requested, 0, ',', '.') }}
+                            </td>
+                            <td class="py-3 px-3 text-right font-mono font-bold text-primary-700">
+                                Rp {{ number_format((float) $day->total_approved, 0, ',', '.') }}
+                            </td>
+                            <td class="py-3 px-3 text-right font-mono text-emerald-600 font-bold">
+                                Rp {{ number_format((float) $day->total_paid, 0, ',', '.') }}
+                            </td>
+                            <td class="py-3 px-3 text-center">
+                                <a href="{{ route('dispositions.index', ['start_date' => $day->disposition_date, 'end_date' => $day->disposition_date]) }}" class="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-600 hover:text-primary-800 hover:underline">
+                                    <span>Rincian</span>
+                                    <i data-lucide="external-link" class="w-3 h-3"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="py-6 text-center text-slate-400 text-xs">
+                                Belum ada data rekapitulasi harian.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

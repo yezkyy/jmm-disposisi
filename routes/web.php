@@ -3,6 +3,7 @@
 use App\Http\Controllers\Approval\ApprovalController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Disposition\DailyTransferProofController;
 use App\Http\Controllers\Disposition\DispositionController;
 use App\Http\Controllers\Disposition\DispositionDocumentController;
 use App\Http\Controllers\Master\AuditTrailController;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 | Guest Authentication Routes
 |--------------------------------------------------------------------------
 */
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store']);
@@ -75,10 +77,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/{payment}', [PaymentController::class, 'show'])->name('show');
     });
 
-    // Modul Laporan & Analitik (Tahap 6)
+    // Modul Laporan & Analitik (Tahap 6 & Revisi Versi 3 Poin 6)
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
         Route::get('/export-excel', [ReportController::class, 'exportExcel'])->name('export-excel');
+        Route::get('/export-pdf', [ReportController::class, 'exportPdf'])->name('export-pdf');
+    });
+
+    // Modul Bukti Transfer Harian (Revisi Versi 3 Poin 8)
+    Route::prefix('daily-transfer-proofs')->name('daily-transfer-proofs.')->group(function () {
+        Route::post('/', [DailyTransferProofController::class, 'store'])->name('store');
+        Route::get('/{proof}/download', [DailyTransferProofController::class, 'download'])->name('download');
+        Route::delete('/{proof}', [DailyTransferProofController::class, 'destroy'])->name('destroy');
     });
 
     // Master Rekening (Dapat diakses oleh seluruh pengguna terotentikasi, pembuatan in-place diizinkan untuk semua peran)
@@ -153,13 +163,3 @@ Route::middleware('auth')->group(function () {
         });
     });
 });
-
-
-
-
-
-
-
-
-
-

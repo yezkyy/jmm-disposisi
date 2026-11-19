@@ -3,9 +3,12 @@
 namespace App\Services\Reporting;
 
 use App\Models\Category;
+use App\Models\CompanySetting;
 use App\Models\Disposition;
 use App\Models\Division;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -227,6 +230,55 @@ class ReportService
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
             'Cache-Control' => 'max-age=0',
         ]);
+    }
+
+    /**
+     * Export data laporan disposisi ke format PDF resmi (A4 Landscape).
+     */
+    public function exportPdf(array $filters): Response
+    {
+        $dispositions = $this->getFilteredQuery($filters)->get();
+        $summary = $this->getSummary($filters);
+
+        $companyName = CompanySetting::get('company_name', 'PT Jaya Mukti Mandiri');
+        $companyTagline = CompanySetting::get('company_tagline', 'General Contractor, Heavy Equipment & Logistics Services');
+        $companyAddress = CompanySetting::get('company_address', 'Jl. Mulawarman No. 88, Sepinggan, Balikpapan');
+        $companyPhone = CompanySetting::get('company_phone', '(0542) 765432');
+        $companyEmail = CompanySetting::get('company_email', 'finance@jayamuktimandiri.co.id');
+
+        $candidatePaths = [
+            public_path('images/logo.png'),
+            base_path('public/images/logo.png'),
+            base_path('../public_html/images/logo.png'),
+            base_path('assets/logo.png'),
+            public_path('logo.png'),
+        ];
+        $logoBase64 = null;
+        foreach ($candidatePaths as $path) {
+            if (file_exists($path) && is_readable($path)) {
+                $data = file_get_contents($path);
+                if ($data) {
+                    $logoBase64 = 'data:image/png;base64,' . base64_encode($data);
+                    break;
+                }
+            }
+        }
+
+        $pdf = Pdf::loadView('reports.export-pdf', compact(
+            'dispositions',
+            'summary',
+            'filters',
+            'companyName',
+            'companyTagline',
+            'companyAddress',
+            'companyPhone',
+            'companyEmail',
+            'logoBase64'
+        ))->setPaper('a4', 'landscape');
+
+        $filename = 'Laporan_Disposisi_JMM_' . date('Ymd_His') . '.pdf';
+
+        return $pdf->stream($filename);
     }
 }
 

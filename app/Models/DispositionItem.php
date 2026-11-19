@@ -53,12 +53,14 @@ class DispositionItem extends Model
             return null;
         }
 
-        $val = (float) $this->qty;
-        if (floor($val) == $val) {
-            return (string) (int) $val;
+        $qty = (float) $this->qty;
+        if (floor($qty) == $qty) {
+            return (string) (int) $qty;
         }
 
-        return rtrim(rtrim(number_format($val, 2, ',', '.'), '0'), ',');
+        // Tampilkan desimal tanpa trailing zero, koma desimal Indonesia
+        $formatted = number_format($qty, 2, ',', '');
+        return rtrim(rtrim($formatted, '0'), ',');
     }
 
     public function getUnitAttribute(): ?string

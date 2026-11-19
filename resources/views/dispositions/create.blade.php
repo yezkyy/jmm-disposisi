@@ -162,13 +162,13 @@
                         <tr class="item-row" data-index="0">
                             <td class="py-2.5 px-2 text-center text-slate-400 font-semibold row-number align-middle">1</td>
                             <td class="py-2.5 px-3 align-top">
-                                <input type="text" name="items[0][description]" required placeholder="Contoh: Pembelian Oli Mesin, Sparepart, ATK..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium">
+                                <textarea name="items[0][description]" rows="2" required placeholder="Contoh: Pembelian Oli Mesin, Sparepart, ATK..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium resize-y">{{ old('items.0.description') }}</textarea>
                             </td>
                             <td class="py-2.5 px-2 align-top">
-                                <input type="text" name="items[0][invoice_number]" placeholder="No. Inv..." class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <input type="text" name="items[0][invoice_number]" value="{{ old('items.0.invoice_number') }}" placeholder="No. Inv..." class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
                             </td>
                             <td class="py-2.5 px-2 align-top">
-                                <input type="number" step="any" min="0.01" name="items[0][qty]" value="{{ (old('items.0.qty') !== null && old('items.0.qty') !== '') ? (floor((float)old('items.0.qty')) == (float)old('items.0.qty') ? (int)old('items.0.qty') : (float)old('items.0.qty')) : '' }}" placeholder="Qty" class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <input type="number" step="1" min="1" name="items[0][qty]" value="{{ old('items.0.qty') ? (int)old('items.0.qty') : '' }}" placeholder="Qty" class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
                             </td>
                             <td class="py-2.5 px-2 align-top">
                                 <input type="text" name="items[0][unit]" value="" placeholder="Pcs, unit..." class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -456,13 +456,13 @@
         tr.innerHTML = `
             <td class="py-2.5 px-2 text-center text-slate-400 font-semibold row-number align-middle">${itemIndex + 1}</td>
             <td class="py-2.5 px-3 align-top">
-                <input type="text" name="items[${itemIndex}][description]" required placeholder="Contoh: Pembelian Oli Mesin, Sparepart, ATK..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium">
+                <textarea name="items[${itemIndex}][description]" rows="2" required placeholder="Contoh: Pembelian Oli Mesin, Sparepart, ATK..." class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium resize-y"></textarea>
             </td>
             <td class="py-2.5 px-2 align-top">
                 <input type="text" name="items[${itemIndex}][invoice_number]" placeholder="No. Inv (opsi)" class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
             </td>
             <td class="py-2.5 px-2 align-top">
-                <input type="number" step="any" min="0.01" name="items[${itemIndex}][qty]" placeholder="Qty" class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <input type="number" step="1" min="1" name="items[${itemIndex}][qty]" placeholder="Qty" class="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-primary-500">
             </td>
             <td class="py-2.5 px-2 align-top">
                 <input type="text" name="items[${itemIndex}][unit]" placeholder="Satuan (opsi)" class="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">

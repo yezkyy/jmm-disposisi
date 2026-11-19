@@ -105,6 +105,40 @@ class DashboardController extends Controller
             $categoryTotals = [0, 0, 0, 0];
         }
 
+        // 7. Summary Harian & Rekapitulasi Tanggal (Revisi Versi 3 Poin 5)
+        $todayDate = now()->toDateString();
+        $todayQuery = Disposition::whereDate('disposition_date', $todayDate);
+        if ($user->isPemohon()) {
+            $todayQuery->where('applicant_id', $user->id);
+        }
+
+        $todayCount = (clone $todayQuery)->count();
+        $todayNominal = (float) (clone $todayQuery)->sum('requested_total');
+        $todayApproved = (float) (clone $todayQuery)->whereIn('approval_status', [
+            Disposition::STATUS_APPROVED,
+            Disposition::STATUS_PARTIALLY_APPROVED
+        ])->sum(DB::raw('COALESCE(final_approved_total, requested_total)'));
+
+        // Rekapitulasi Harian Berdasarkan Tanggal (14 Hari Aktivitas Terakhir)
+        $dailySummaryQuery = DB::table('dispositions')
+            ->select(
+                'disposition_date',
+                DB::raw('COUNT(id) as total_count'),
+                DB::raw('SUM(requested_total) as total_requested'),
+                DB::raw('SUM(CASE WHEN approval_status IN ("approved", "partially_approved") THEN COALESCE(final_approved_total, requested_total) ELSE 0 END) as total_approved'),
+                DB::raw('SUM(paid_total) as total_paid')
+            )
+            ->whereNotNull('disposition_date');
+
+        if ($user->isPemohon()) {
+            $dailySummaryQuery->where('applicant_id', $user->id);
+        }
+
+        $dailySummary = $dailySummaryQuery->groupBy('disposition_date')
+            ->orderByDesc('disposition_date')
+            ->take(14)
+            ->get();
+
         $breadcrumbs = [
             ['label' => 'Dashboard', 'url' => '']
         ];
@@ -124,6 +158,10 @@ class DashboardController extends Controller
             'trendPaid',
             'categoryLabels',
             'categoryTotals',
+            'todayCount',
+            'todayNominal',
+            'todayApproved',
+            'dailySummary',
             'breadcrumbs'
         ));
     }

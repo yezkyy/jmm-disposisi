@@ -71,5 +71,23 @@ class ReportController extends Controller
 
         return $this->reportService->exportExcel($filters);
     }
+
+    /**
+     * Unduh berkas laporan dalam format PDF resmi.
+     */
+    public function exportPdf(Request $request): \Illuminate\Http\Response
+    {
+        $filters = $request->only([
+            'start_date',
+            'end_date',
+            'division_id',
+            'category_id',
+            'approval_status',
+            'payment_status',
+            'search',
+        ]);
+
+        return $this->reportService->exportPdf($filters);
+    }
 }
 

@@ -266,7 +266,7 @@
                     @if ($hasItemInvoice)
                         <td class="font-mono" style="font-size: 7.5pt;">{{ $item->invoice_number ?: '-' }}</td>
                     @endif
-                    <td><strong>{{ $item->description }}</strong></td>
+                    <td><strong>{!! nl2br(e($item->description)) !!}</strong></td>
                     @if ($hasQtyUnit)
                         <td class="text-right font-mono">{{ $item->formatted_qty ?? '-' }}</td>
                         <td class="text-center">{{ $item->unit ?: '-' }}</td>
